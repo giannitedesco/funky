@@ -18,10 +18,22 @@ class InitClientMsg(Message):
 	_types = (TStr, TStr, TStr, TStr, TStr)
 	_msgtype = 2
 
+class LoginClientMsg(Message):
+	_fields = ('enctyp', 'enckey', 'nam', 'pwd',
+			'client_type', 'client_id', 'jver', 'osver',
+			'client_ver', 'mac')
+	_defaults = ('PLAIN' ,'', 'name', '',
+			'Client', 'BSW', '1.8.0_101', 'sparc-1.0-SunOS',
+			'-- Client $Revision: 1.183 $ (Client)', '')
+	_types = (TStr, TStr, TStr, TStr,
+			TStr, TStr, TStr, TStr,
+			TStr, TStr)
+	_msgtype = 20
+
 class PingClientMsg(Message):
-	_fields = ('payload',)
-	_defaults = ('' ,)
-	_types = (TStr,)
+	_fields = ()
+	_defaults = ()
+	_types = ()
 	_msgtype = 23
 
 class RefreshClientMsg(Message):
@@ -49,9 +61,9 @@ class PlayerWantedClientMsg(Message):
 	_msgtype = 988
 
 class GameStartClientMsg(Message):
-	_fields = ('tree',)
-	_defaults = ('' ,)
-	_types = (TStr,)
+	_fields = ()
+	_defaults = ()
+	_types = ()
 	_msgtype = 989
 
 class RoomChangeClientMsg(Message):
@@ -76,6 +88,7 @@ msgmap = dict(((x._msgtype, x) for x in (\
 		QuitClientMsg,
 		CmdClientMsg,
 		InitClientMsg,
+		LoginClientMsg,
 		PingClientMsg,
 		RefreshClientMsg,
 		LangInfoClientMsg,

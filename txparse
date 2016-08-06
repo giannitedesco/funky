@@ -4,12 +4,40 @@ from funky import *
 from sys import argv
 from struct import unpack
 
+def decrypt(x):
+	from itertools import izip, cycle
+	def xorp(k, c):
+		k = bytearray(k)
+		c = bytearray(c)
+		p = ''.join(chr(a ^ b) for (a,b) in izip(c, cycle(k)))
+		return p
+
+	x = client.LoginClientMsg(
+			nam = xorp(x.enckey, x.nam),
+			pwd = xorp(x.enckey, x.pwd),
+			client_type = xorp(x.enckey, x.client_type),
+			client_id = xorp(x.enckey, x.client_id),
+			jver = xorp(x.enckey, x.jver),
+			osver = xorp(x.enckey, x.osver),
+			client_ver = xorp(x.enckey, x.client_ver),
+			mac = xorp(x.enckey, x.mac),
+		)
+
+	return x
+
 def dispatch(t, b):
 	c = client.msgmap.get(t, None)
 	if c is None:
 		print 'UNKNOWN(%r), %r'%(t, b)
 	else:
 		x = c.frombytes(b)
+		#if b != x.get_bytes()[5:]:
+		#	print x
+		#	print '%r'%bytearray(b)
+		#	print '%r'%bytearray(x.get_bytes()[5:])
+		#	print
+		if isinstance(x, client.LoginClientMsg):
+			x = decrypt(x)
 		print x
 
 def rxparse(fn):

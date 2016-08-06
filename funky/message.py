@@ -1,16 +1,25 @@
 from struct import pack, unpack
+from operator import itemgetter
+
+class Sentinel(object):
+	pass
 
 class Message(tuple):
 	__slots__ = ()
+	_initialized = False
 	def __new__(_cls, *args, **kwargs):
-		a = tuple(map(lambda x: kwargs.pop(x, None), _cls._fields))
+		if not _cls._initialized:
+			for i, x in enumerate(_cls._fields):
+				setattr(_cls, x, property(itemgetter(i)))
+			_cls._initialized = True
+
+		a = tuple(map(lambda x: kwargs.pop(x, Sentinel()), _cls._fields))
 		if kwargs:
 			raise Exception('Unknown fields: %s'%\
 					', '.join(kwargs.keys()))
-		t = ((v is not None and v or t(d))
-			for (v, d, t) in zip(a, _cls._defaults, _cls._types))
-		t = tuple(t)
-		ret = tuple.__new__(_cls, t)
+		ax = [((isinstance(v, Sentinel)) and t(d) or t(v))
+			for (v, d, t) in zip(a, _cls._defaults, _cls._types)]
+		ret = tuple.__new__(_cls, ax)
 		return ret
 
 	def get_bytes(self):
@@ -35,7 +44,7 @@ class Message(tuple):
 		args = dict()
 		#print _cls, '%r'%b
 		for n, t, d in zip(_cls._fields, _cls._types, _cls._defaults):
-			#print _cls, n
+			#print _cls, t, n
 			(val, sz) = t.frombytes(b, d)
 			args[n] = val
 			b = b[sz:]
@@ -148,16 +157,40 @@ class TInt3Array(tuple):
 		return (_cls(out), ofs)
 
 class TStr(str):
-	def get_bytes(self):
-		return pack('>BH', 3, len(self))
+	def fencode(self, s):
+		ret = ''
+		for c in map(ord, s):
+			if c >= 1 and c <= 127:
+				ret += chr(c)
+			else:
+				ret += chr(0xc0 | ((c >> 6) & 0x1f))
+				ret += chr(0x80 | ((c & 0x3f)))
+		return ret
 
+	def get_bytes(self):
+		e = self.fencode(self)
+		return pack('>BH', 3, len(e)) + e
+
+	@classmethod
+	def fdecode(_cls, s):
+		ret = ''
+		a = 0
+		for c in map(ord, s):
+			if (c & 0xc0) == 0xc0:
+				a = (c & 0x1f) << 6
+			else:
+				if c & 0x80:
+					c &= 0x3f
+				ret += chr(a | c)
+				a = 0
+		return ret
 	@classmethod
 	def frombytes(_cls, b, d):
 		if not b:
 			return (_cls(d), 0)
 		tv, sz = unpack('>BH', b[:3])
 		assert(tv == 3)
-		return (_cls(b[3:3 + sz]), sz + 3)
+		return (_cls(_cls.fdecode(b[3:3 + sz])), sz + 3)
 
 class TStrArray(tuple):
 	def get_bytes(self):
