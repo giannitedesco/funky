@@ -1,0 +1,37 @@
+#!/usr/bin/env python
+
+from funky import *
+from sys import argv
+from struct import unpack
+
+def dispatch(t, b):
+	c = client.msgmap.get(t, None)
+	if c is None:
+		print 'UNKNOWN(%r), %r'%(t, b)
+	else:
+		x = c.frombytes(b)
+		print x
+
+def rxparse(fn):
+	f = open(fn)
+
+	buf = f.read()
+
+	while len(buf) >= 5:
+		(hi, lo, t) = unpack('>BHH', buf[:5])
+		l = (hi << 16) | lo
+		assert(l >= 5)
+		b = buf[5:l]
+
+		buf = buf[l:]
+
+		dispatch(t, b)
+		#print t, l
+
+def main():
+	for x in argv[1:]:
+		rxparse(x)
+	return
+
+if __name__ == '__main__':
+	main()

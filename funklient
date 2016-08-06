@@ -1,0 +1,112 @@
+#!/usr/bin/env python
+
+from twisted.internet import gtk3reactor, protocol
+from twisted.internet.protocol import Protocol, ClientCreator
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk, Gio
+from funky import *
+from struct import unpack
+
+reactor = gtk3reactor.install()
+
+class FunkProto(Protocol):
+	def __init__(self, owner):
+		self.owner = owner
+	def connectionMade(self):
+		self.owner.conn_made(self)
+	def dataReceived(self, data):
+		self.owner.rx(data)
+	def connectionLost(self, reason):
+		self.owner.conn_lost(reason)
+
+	def first_init(self):
+		x = proto.InitMessage()
+		self.tx(x)
+
+	def tx(self, d):
+		print self, d
+		self.transport.write(d.get_bytes())
+
+class FunkWindow(Gtk.Window):
+	def __init__(self):
+		super(FunkWindow, self).__init__(type =
+						Gtk.WindowType.TOPLEVEL)
+		self.connect('destroy', self.destroy)
+		self.set_default_size(320, 280)
+		hb = Gtk.HeaderBar()
+		hb.set_show_close_button(True)
+		hb.props.title = 'FunKlient'
+		self.set_titlebar(hb)
+
+		self.__buf = ''
+		self.__p = None
+		self.__cr = ClientCreator(reactor, FunkProto, self)
+		self.__c = self.__cr.connectTCP('game.brettspielwelt.de', 7670)
+
+		self.f = open('rx.log', 'w')
+
+	def conn_made(self, p):
+		self.__p = p
+		x = proto.InitMessage()
+		self.tx(x)
+
+	def conn_lost(self, reason):
+		print 'conn_lost', reason
+		self.__p = None
+
+	def rx_msg(self, t, b):
+		c = proto.msgmap.get(t, None)
+		if c is None:
+			print 'UNKNOWN(%r), %r'%(t, b)
+			return
+
+		x = c.frombytes(b)
+		print x
+
+	def pump(self):
+		while len(self.__buf) >= 5:
+			(hi, lo, t) = unpack('>BHH', buf[:5])
+			l = (hi << 16) | lo
+			assert(l >= 5)
+			b = buf[5:l]
+
+			self.__buf = self.__buf[l:]
+			self.rx_msg(t, b)
+
+	def rx(self, data):
+		self.f.write(data)
+		self.f.flush()
+		self.__buf += data
+		self.pump()
+
+	def tx(self, d):
+		if self.__p is None:
+			print '%r NOT SENT'%d
+			return
+		self.__p.tx(d)
+
+	def destroy(self, *_):
+		super(FunkWindow, self).destroy()
+		reactor.stop()
+
+class FunKlient(Gtk.Application):
+	def __init__(self):
+		super(FunKlient, self).__init__(
+				application_id = 'apps.fun.klient',
+				flags = Gio.ApplicationFlags.FLAGS_NONE)
+		self.connect('activate', self.on_activate)
+
+	def on_activate(self, data = None):
+		window = FunkWindow()
+		window.show_all()
+		self.add_window(window)
+
+
+def main():
+	app = FunKlient()
+	reactor.registerGApplication(app)
+	reactor.run()
+
+if __name__ == '__main__':
+	main()
