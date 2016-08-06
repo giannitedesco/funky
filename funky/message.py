@@ -17,8 +17,14 @@ class Message(tuple):
 		if kwargs:
 			raise Exception('Unknown fields: %s'%\
 					', '.join(kwargs.keys()))
-		ax = [((isinstance(v, Sentinel)) and t(d) or t(v))
-			for (v, d, t) in zip(a, _cls._defaults, _cls._types)]
+		def setdef(a, d, t):
+			if isinstance(a, Sentinel):
+				return t(d)
+			else:
+				return t(a)
+
+		ax = map(lambda (x,y,z):setdef(x,y,z),
+			zip(a, _cls._defaults, _cls._types))
 		ret = tuple.__new__(_cls, ax)
 		return ret
 
