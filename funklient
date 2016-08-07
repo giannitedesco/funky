@@ -51,6 +51,12 @@ class FunkWindow(Gtk.Window):
 		def unhandled_cb(_, msg):
 			self.server_win.rx_msg(msg)
 
+		def kb_alt_1(*_):
+			self.stack.set_visible_child_name('server')
+			self.server_win.entry.grab_focus()
+		def kb_alt_2(*_):
+			self.stack.set_visible_child_name('game')
+
 		super(FunkWindow, self).__init__(type =
 						Gtk.WindowType.TOPLEVEL)
 
@@ -67,7 +73,7 @@ class FunkWindow(Gtk.Window):
 		self.__cr = ClientCreator(reactor, FunkProto, self)
 		self.__c = self.__cr.connectTCP('game.brettspielwelt.de', 7670)
 
-		self.set_default_size(320, 280)
+		self.set_default_size(1280, 720)
 		hb = Gtk.HeaderBar()
 		hb.set_show_close_button(True)
 		hb.props.title = 'FunKlient'
@@ -82,9 +88,17 @@ class FunkWindow(Gtk.Window):
 				Gdk.ModifierType.CONTROL_MASK,
 				0,
 				self.destroy)
+		accel.connect(Gdk.keyval_from_name('1'),
+				Gdk.ModifierType.MOD1_MASK,
+				0,
+				kb_alt_1)
+		accel.connect(Gdk.keyval_from_name('2'),
+				Gdk.ModifierType.MOD1_MASK,
+				0,
+				kb_alt_2)
 		self.add_accel_group(accel)
-
 		self.set_mnemonic_modifier(0)
+
 		self.stack = Gtk.Stack()
 		self.stack.set_transition_type(\
 				Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
@@ -92,11 +106,21 @@ class FunkWindow(Gtk.Window):
 
 		self.server_win = ServerWindow()
 		self.server_win.connect('server_cmd', swin_cb)
+		self.game_win = Gtk.Label('game')
+
 		self.stack.add_titled(self.server_win,
 					'server',
 					'Server Messages')
 		self.stack.child_set_property(self.server_win,
-				'icon-name', 'accessories-dictionary-symbolic')
+					'icon-name',
+					'preferences-system-network-symbolic')
+
+		self.stack.add_titled(self.game_win,
+					'game',
+					'Game Window')
+		self.stack.child_set_property(self.game_win,
+					'icon-name',
+					'system-users-symbolic')
 
 		vb = Gtk.Box(orientation = Gtk.Orientation.VERTICAL,
 				spacing = 6)
