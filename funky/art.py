@@ -1,6 +1,6 @@
 import gi
 gi.require_version('GdkPixbuf', '2.0')
-from gi.repository.GdkPixbuf import Pixbuf
+from gi.repository.GdkPixbuf import Pixbuf, InterpType
 
 from os.path import join
 
@@ -35,7 +35,9 @@ def load_plants(subdir):
 
 	out = []
 	for fn in map(lambda x:join(path, x), fns):
-		out.append(Pixbuf.new_from_file(fn))
+		pix = Pixbuf.new_from_file(fn)
+		#pix = pix.scale_simple(48, 48, InterpType.HYPER)
+		out.append(pix)
 
 	return tuple(out)
 

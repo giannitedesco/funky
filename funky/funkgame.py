@@ -4,20 +4,52 @@ from gi.repository import GObject
 class FunkGame(GObject.GObject):
 	__gsignals__ = {
 		# Emitted with a Message which should be sent to server
-		'tx_msg': (GObject.SIGNAL_RUN_LAST, None, (object, )),
+		'tx_msg':
+			(GObject.SIGNAL_RUN_LAST, None, (object, )),
 
 		# Emitted with any unhandled messages
-		'rx_unhandled': (GObject.SIGNAL_RUN_LAST, None, (object, )),
+		'rx_unhandled':
+			(GObject.SIGNAL_RUN_LAST, None, (object, )),
 
 		# Emitted for any chat messages
-		'chat_msg': (GObject.SIGNAL_RUN_LAST, None, (str, )),
+		'chat_msg':
+			(GObject.SIGNAL_RUN_LAST, None, (str, )),
 
 		# Emitted for any chat messages
-		'log': (GObject.SIGNAL_RUN_LAST, None, (str, )),
+		'log':
+			(GObject.SIGNAL_RUN_LAST, None, (str, )),
+
+		# Game status updates
+		'update_ps':
+			(GObject.SIGNAL_RUN_LAST, None, (int, int)),
+		'update_money':
+			(GObject.SIGNAL_RUN_LAST, None, (object, )),
+		'update_players':
+			(GObject.SIGNAL_RUN_LAST, None, (int, object)),
+		'update_plants':
+			(GObject.SIGNAL_RUN_LAST, None, (object,)),
+		'update_nr_city':
+			(GObject.SIGNAL_RUN_LAST, None, (object,)),
 	}
 
 	def __init__(self):
 		super(GObject.GObject, self).__init__()
+		self.phase = -1
+		self.stufe = -1
+		self.round = -1
+
+		self.nr_players = 0
+		self.i_am_id = -1
+		self.sequence = (-1, -1, -1, -1, -1, -1)
+		self.players = (' ', ' ', ' ', ' ', ' ', ' ')
+		self.money = (50, 50, 50, 50, 50, 50)
+		self.plants = ((-1, -1, -1, -1),
+				(-1, -1, -1, -1),
+				(-1, -1, -1, -1),
+				(-1, -1, -1, -1),
+				(-1, -1, -1, -1),
+				(-1, -1, -1, -1))
+		self.nr_city = ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0))
 
 	def tx(self, msg):
 		'Emits a message to transmit to server'
@@ -38,18 +70,99 @@ class FunkGame(GObject.GObject):
 		x = client.PingClientMsg()
 		self.tx(x)
 
-	def rx_msg(self, t, b):
-		'Handles a message received from the server'
+	def update_ps(self, phase, stufe):
+		old_ps = (self.phase, self.stufe)
+		self.phase = phase
+		self.stufe = stufe
+		if (self.phase, self.stufe) == old_ps:
+			return
+		self.emit('update_ps', self.phase, self.stufe)
+
+	def update_money(self, money):
+		if not money:
+			return
+		old_money = self.money
+		self.money = money
+		if self.money == old_money:
+			return
+		self.emit('update_money', self.money)
+
+	def update_players(self, nr, players):
+		if not players:
+			return
+		old_players = (nr, self.players)
+		self.players = players
+		self.nr_players = nr
+		if (self.nr_players, self.players) == old_players:
+			return
+		self.emit('update_players', self.nr_players, self.players)
+
+	def update_plants(self, plants):
+		if not plants:
+			return
+		old_plants = self.plants
+		self.plants = plants
+		if self.plants == old_plants:
+			return
+		self.emit('update_plants', self.plants)
+
+	def update_nr_city(self, nr_city):
+		if not nr_city:
+			return
+		old_nr_city = self.nr_city
+		self.nr_city = nr_city
+		if self.nr_city == old_nr_city:
+			return
+		self.emit('update_nr_city', self.nr_city)
+
+	def dispatch(self, msg):
 		def ping_cb(msg):
 			self.pong()
 		def chat_cb(msg):
 			self.chat(msg.cmd)
 
+		def auction_cb(msg):
+			phase = msg.phase_stufe & 0x3ff
+			stufe = msg.phase_stufe >> 10
+			self.update_ps(phase, stufe)
+
+			self.update_money(msg.money)
+
+		def player_cb(msg):
+			self.round = msg.round
+			self.update_ps(msg.phase, msg.stufe)
+
+			an = ('player%d'%x for x in xrange(1, 7))
+			players = tuple(map(lambda x:getattr(msg, x), an))
+			self.update_players(int(msg.nr_players), players)
+
+			if msg.sequence:
+				self.sequence = msg.sequence
+
+			self.i_am_id = int(msg.i_am_id)
+
+		def score_cb(msg):
+			self.update_plants(msg.plants)
+			self.update_nr_city(msg.nr_city)
+
 		disp = {
 			server.PingServerMsg: ping_cb,
 			server.CmdServerMsg: chat_cb,
+			server.FunkenAuctionServerMsg: auction_cb,
+			server.FunkenPlayerServerMsg: player_cb,
+			server.FunkenScoreServerMsg: score_cb,
 		}
 
+		# dispatch the message
+		cb = disp.get(msg.__class__, None)
+		if cb is None:
+			self.rx_unhandled(msg)
+			return
+
+		cb(msg)
+
+	def rx_msg(self, t, b):
+		'Handles a message received from the server'
 		# figure out the type of message
 		c = server.msgmap.get(t, None)
 		if c is None:
@@ -59,13 +172,7 @@ class FunkGame(GObject.GObject):
 		# parse the message from the bytes
 		msg = c.frombytes(b)
 
-		# dispatch the message
-		cb = disp.get(c, None)
-		if cb is None:
-			self.rx_unhandled(msg)
-			return
-
-		cb(msg)
+		self.dispatch(msg)
 
 	def cl_cmd(self, cmd):
 		'Receive a string typed in to server window'
@@ -110,6 +217,10 @@ class FunkGame(GObject.GObject):
 			frm, to, rs = args.split(None, 2)
 			self.rs_move(int(frm), int(to), int(cb))
 
+		def eval_cb(cmd, args):
+			x = eval(args)
+			self.dispatch(x)
+
 		disp = {
 			'pass': pass_cb,
 			'bid': bid_cb,
@@ -119,6 +230,7 @@ class FunkGame(GObject.GObject):
 			'fire': fire_cb,
 			'demolish': demolish_cb,
 			'rsmove': rsmove_cb,
+			'eval': eval_cb,
 		}
 		try:
 			cmd, args = cmd.split(None, 1)

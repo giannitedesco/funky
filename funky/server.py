@@ -85,8 +85,8 @@ class FunkenPlayerServerMsg(Message):
 			TIntArray, TBoolArray)
 	_msgtype = 201
 
-class FunkenMarketServerMsg(Message):
-	_fields = ('target', 'stack', 'market', 'provider',
+class FunkenAuctionServerMsg(Message):
+	_fields = ('target', 'cards_left', 'market', 'provider',
 			'in_play', 'bid', 'act_provider', 'new',
 			'old', 'money', 'phase_stufe')
 	_defaults = ('', -1, tuple(), tuple(),
@@ -192,7 +192,7 @@ msgmap = dict(((x._msgtype, x) for x in (\
 		LangInfoServerMsg,
 		FunkenBoardServerMsg,
 		FunkenPlayerServerMsg,
-		FunkenMarketServerMsg,
+		FunkenAuctionServerMsg,
 		FunkenCityServerMsg,
 		FunkenMaterialsServerMsg,
 		FunkenScoreServerMsg,

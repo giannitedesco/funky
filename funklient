@@ -39,6 +39,24 @@ class FunkProto(Protocol):
 		self.transport.write(b)
 
 class FunkWindow(Gtk.Window):
+	def __from_file(self, fn):
+		f = open(fn)
+
+		buf = f.read()
+
+		while len(buf) >= 5:
+			(hi, lo, t) = unpack('>BHH', buf[:5])
+			l = (hi << 16) | lo
+			assert(l >= 5)
+			b = buf[5:l]
+
+			buf = buf[l:]
+
+			self.game.rx_msg(t, b)
+
+	def __from_net(self):
+		self.__c = self.__cr.connectTCP('game.brettspielwelt.de', 7670)
+
 	def __init__(self):
 		def swin_cb(_, s):
 			self.game.cl_cmd(s)
@@ -50,6 +68,21 @@ class FunkWindow(Gtk.Window):
 			self.server_win.log(s)
 		def unhandled_cb(_, msg):
 			self.server_win.rx_msg(msg)
+
+		def ps_cb(_, p, s):
+			print 'phase %d, stufe %d'%(p, s)
+		def money_cb(_, money):
+			print 'money', money
+			self.game_win.update_player_money(money)
+		def players_cb(_, nr, players):
+			print 'players', nr, players
+			self.game_win.update_player_names(nr, players)
+		def plants_cb(_, plants):
+			print 'plants', plants
+			self.game_win.update_player_plants(plants)
+		def nr_city_cb(_, nr_city):
+			print 'nr_city', nr_city
+			self.game_win.update_player_cities(nr_city)
 
 		def kb_alt_1(*_):
 			self.stack.set_visible_child_name('server')
@@ -68,10 +101,15 @@ class FunkWindow(Gtk.Window):
 		self.game.connect('log', log_cb)
 		self.game.connect('rx_unhandled', unhandled_cb)
 
+		self.game.connect('update_ps', ps_cb)
+		self.game.connect('update_money', money_cb)
+		self.game.connect('update_players', players_cb)
+		self.game.connect('update_plants', plants_cb)
+		self.game.connect('update_nr_city', nr_city_cb)
+
 		self.__buf = ''
 		self.__p = None
 		self.__cr = ClientCreator(reactor, FunkProto, self)
-		#self.__c = self.__cr.connectTCP('game.brettspielwelt.de', 7670)
 
 		self.set_default_size(1280, 720)
 		hb = Gtk.HeaderBar()
@@ -136,6 +174,12 @@ class FunkWindow(Gtk.Window):
 		hb.props.title = 'FunKlient'
 		hb.pack_end(stack_switcher)
 		self.set_titlebar(hb)
+
+		online = False
+		if online:
+			self.__from_net()
+		else:
+			self.__from_file('rx.log')
 
 	def first_init(self):
 		x = client.InitClientMsg()
