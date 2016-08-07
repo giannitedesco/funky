@@ -71,7 +71,7 @@ class FunkWindow(Gtk.Window):
 		self.__buf = ''
 		self.__p = None
 		self.__cr = ClientCreator(reactor, FunkProto, self)
-		self.__c = self.__cr.connectTCP('game.brettspielwelt.de', 7670)
+		#self.__c = self.__cr.connectTCP('game.brettspielwelt.de', 7670)
 
 		self.set_default_size(1280, 720)
 		hb = Gtk.HeaderBar()
@@ -106,7 +106,8 @@ class FunkWindow(Gtk.Window):
 
 		self.server_win = ServerWindow()
 		self.server_win.connect('server_cmd', swin_cb)
-		self.game_win = Gtk.Label('game')
+
+		self.game_win = GameWindow()
 
 		self.stack.add_titled(self.server_win,
 					'server',

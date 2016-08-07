@@ -1,6 +1,7 @@
 from funkgame import FunkGame
 from message import Message
 from serverwindow import ServerWindow
+from gamewindow import GameWindow
 import client, server
 
 def xorp(k, c):
@@ -33,6 +34,7 @@ __all__ = (
 		'server',
 		'xorp',
 		'FunkGame',
+		'GameWindow',
 		'Message',
 		'ServerWindow',
 	)
