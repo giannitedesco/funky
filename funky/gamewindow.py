@@ -76,7 +76,6 @@ class PlayerRow(Gtk.ListBoxRow):
 		vbox.pack_start(self.plants, True, True, 0)
 
 		self.update(u)
-		self.u = u
 	
 	def update(self, u):
 		self.update_name(u.name)
@@ -87,9 +86,9 @@ class PlayerRow(Gtk.ListBoxRow):
 	def update_name(self, name):
 		self.name.set_markup('<b>%s</b>'%name)
 	def update_money(self, money):
-		self.cities.set_markup('<b>%d elektro</b>'%money)
+		self.money.set_markup('<b>%d elektro</b>'%money)
 	def update_cities(self, cities):
-		self.money.set_markup('<b>%d cities</b>'%cities)
+		self.cities.set_markup('<b>%d cities</b>'%cities)
 	def update_plants(self, plants):
 		self.plants.update(plants)
 
@@ -133,6 +132,7 @@ class GameWindow(Gtk.Box):
 				self.player_list.insert(PlayerRow(u), i)
 			else:
 				r.update_name(n)
+		self.player_list.show_all()
 
 	def update_player_plants(self, plants):
 		for (i, p) in enumerate(plants):
@@ -145,6 +145,7 @@ class GameWindow(Gtk.Box):
 				self.player_list.insert(PlayerRow(u), i)
 			else:
 				r.update_plants(p)
+		self.player_list.show_all()
 
 	def update_player_money(self, money):
 		for (i, m) in enumerate(money):
@@ -157,6 +158,7 @@ class GameWindow(Gtk.Box):
 				self.player_list.insert(PlayerRow(u), i)
 			else:
 				r.update_money(m)
+		self.player_list.show_all()
 
 	def update_player_cities(self, cities):
 		for (i, (_, c)) in enumerate(cities):
@@ -169,3 +171,4 @@ class GameWindow(Gtk.Box):
 				self.player_list.insert(PlayerRow(u), i)
 			else:
 				r.update_cities(c)
+		self.player_list.show_all()
