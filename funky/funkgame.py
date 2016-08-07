@@ -30,6 +30,8 @@ class FunkGame(GObject.GObject):
 			(GObject.SIGNAL_RUN_LAST, None, (object,)),
 		'update_nr_city':
 			(GObject.SIGNAL_RUN_LAST, None, (object,)),
+		'update_market':
+			(GObject.SIGNAL_RUN_LAST, None, (int, object)),
 	}
 
 	def __init__(self):
@@ -50,6 +52,8 @@ class FunkGame(GObject.GObject):
 				(-1, -1, -1, -1),
 				(-1, -1, -1, -1))
 		self.nr_city = ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0))
+		self.market = ()
+		self.cards_left = 0
 
 	def tx(self, msg):
 		'Emits a message to transmit to server'
@@ -97,6 +101,16 @@ class FunkGame(GObject.GObject):
 			return
 		self.emit('update_players', self.nr_players, self.players)
 
+	def update_market(self, nr, market):
+		if not market:
+			return
+		old_market = (nr, self.market)
+		self.market = market
+		self.cards_left = nr
+		if (self.cards_left, self.market) == old_market:
+			return
+		self.emit('update_market', self.cards_left, self.market)
+
 	def update_plants(self, plants):
 		if not plants:
 			return
@@ -127,6 +141,8 @@ class FunkGame(GObject.GObject):
 			self.update_ps(phase, stufe)
 
 			self.update_money(msg.money)
+
+			self.update_market(msg.cards_left, msg.market)
 
 		def player_cb(msg):
 			self.round = msg.round

@@ -58,6 +58,11 @@ class FunkWindow(Gtk.Window):
 		self.__c = self.__cr.connectTCP('game.brettspielwelt.de', 7670)
 
 	def __init__(self):
+		def bid_cb(_, index, price):
+			self.game.bid(index, price)
+		def pass_cb(_):
+			self.game.bid(-1, -1)
+
 		def swin_cb(_, s):
 			self.game.cl_cmd(s)
 		def tx_cb(_, msg):
@@ -87,6 +92,8 @@ class FunkWindow(Gtk.Window):
 			self.game_win.update_player_plants(plants)
 		def nr_city_cb(_, nr_city):
 			self.game_win.update_player_cities(nr_city)
+		def market_cb(_, cards_left, market):
+			self.game_win.update_market(cards_left, market)
 
 		def kb_alt_1(*_):
 			self.stack.set_visible_child_name('server')
@@ -110,6 +117,7 @@ class FunkWindow(Gtk.Window):
 		self.game.connect('update_players', players_cb)
 		self.game.connect('update_plants', plants_cb)
 		self.game.connect('update_nr_city', nr_city_cb)
+		self.game.connect('update_market', market_cb)
 
 		self.__buf = ''
 		self.__p = None
@@ -150,6 +158,8 @@ class FunkWindow(Gtk.Window):
 		self.server_win.connect('server_cmd', swin_cb)
 
 		self.game_win = GameWindow()
+		self.game_win.connect('bid', bid_cb)
+		self.game_win.connect('pass', pass_cb)
 
 		self.stack.add_titled(self.server_win,
 					'server',
@@ -179,12 +189,11 @@ class FunkWindow(Gtk.Window):
 		hb.pack_end(stack_switcher)
 		self.set_titlebar(hb)
 
-		online = False
+		online = True
 		if online:
 			self.__from_net()
 		else:
-			#self.__from_file('rx.log')
-			pass
+			self.__from_file('rx.log')
 
 	def first_init(self):
 		x = client.InitClientMsg()
