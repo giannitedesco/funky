@@ -5,23 +5,16 @@ from sys import argv
 from struct import unpack
 
 def decrypt(x):
-	from itertools import izip, cycle
-	def xorp(k, c):
-		k = bytearray(k)
-		c = bytearray(c)
-		p = ''.join(chr(a ^ b) for (a,b) in izip(c, cycle(k)))
-		return p
-
 	x = client.LoginClientMsg(
-			nam = xorp(x.enckey, x.nam),
-			pwd = xorp(x.enckey, x.pwd),
-			client_type = xorp(x.enckey, x.client_type),
-			client_id = xorp(x.enckey, x.client_id),
-			jver = xorp(x.enckey, x.jver),
-			osver = xorp(x.enckey, x.osver),
-			client_ver = xorp(x.enckey, x.client_ver),
-			mac = xorp(x.enckey, x.mac),
-		)
+		nam = xorp(x.enckey, x.nam),
+		pwd = xorp(x.enckey, x.pwd),
+		client_type = xorp(x.enckey, x.client_type),
+		client_id = xorp(x.enckey, x.client_id),
+		jver = xorp(x.enckey, x.jver),
+		osver = xorp(x.enckey, x.osver),
+		client_ver = xorp(x.enckey, x.client_ver),
+		mac = xorp(x.enckey, x.mac),
+	)
 
 	return x
 

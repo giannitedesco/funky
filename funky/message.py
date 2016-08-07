@@ -48,9 +48,9 @@ class Message(tuple):
 	@classmethod
 	def frombytes(_cls, b):
 		args = dict()
-		#print _cls, '%r'%b
+		#print _cls, '%r'%len(b)
 		for n, t, d in zip(_cls._fields, _cls._types, _cls._defaults):
-			#print _cls, t, n
+			#print _cls, t, n, len(b)
 			(val, sz) = t.frombytes(b, d)
 			args[n] = val
 			b = b[sz:]
@@ -58,25 +58,25 @@ class Message(tuple):
 
 class TInt(int):
 	def get_bytes(self):
-		return pack('>Bi', 1, self)
+		return pack('!Bi', 1, self)
 
 	@classmethod
 	def frombytes(_cls, b, d):
 		if not b:
 			return (_cls(d), 0)
-		tv, v = unpack('>Bi', b[:5])
+		tv, v = unpack('!Bi', b[:5])
 		assert(tv == 1)
 		return (_cls(v), 5)
 
 class TBool(int):
 	def get_bytes(self):
-		return pack('>Bi', 1, self)
+		return pack('!Bi', 1, self)
 
 	@classmethod
 	def frombytes(_cls, b, d):
 		if not b:
 			return (_cls(d), 0)
-		tv, v = unpack('>BB', b[:2])
+		tv, v = unpack('!BB', b[:2])
 		assert(tv == 2)
 		return (_cls(v), 2)
 
@@ -89,12 +89,13 @@ class TIntArray(tuple):
 		if not b:
 			return (_cls(d), 0)
 
-		(tv, nr) = unpack('>BH', b[:3])
+		(tv, nr) = unpack('!BH', b[:3])
+		#print 'IntArray', tv, nr / 4, len(b)
 		assert(tv == 5)
 		ofs = 3
 		out = list()
 		for i in xrange(nr / 4):
-			s = TInt(unpack('>i', b[ofs:ofs+4])[0])
+			s = TInt(unpack('!i', b[ofs:ofs+4])[0])
 			out.append(s)
 			ofs += 4
 
@@ -109,12 +110,12 @@ class TIntVector(tuple):
 		if not b:
 			return (_cls(d), 0)
 
-		(tv, nr) = unpack('>BH', b[:3])
+		(tv, nr) = unpack('!BH', b[:3])
 		assert(tv == 8)
 		ofs = 3
 		out = list()
 		for i in xrange(nr / 4):
-			s = TInt(unpack('>i', b[ofs:ofs+4])[0])
+			s = TInt(unpack('!i', b[ofs:ofs+4])[0])
 			out.append(s)
 			ofs += 4
 
@@ -129,8 +130,12 @@ class TInt2Array(tuple):
 		if not b:
 			return (_cls(d), 0)
 
-		(tv, tot_len, nr) = unpack('>BHB', b[:4])
+		(tv, tot_len, nr) = unpack('!BHB', b[:4])
 		assert(tv == 11)
+		if tot_len > len(b):
+			print 'EVIL %d > %d'%(tot_len, len(b))
+			return (tuple(), len(b))
+		assert(tot_len <= len(b))
 		ofs = 4
 
 		out = list()
@@ -150,7 +155,7 @@ class TInt3Array(tuple):
 		if not b:
 			return (_cls(d), 0)
 
-		(tv, tot_len, nr) = unpack('>BHB', b[:4])
+		(tv, tot_len, nr) = unpack('!BHB', b[:4])
 		assert(tv == 16)
 		ofs = 4
 
@@ -175,7 +180,7 @@ class TStr(str):
 
 	def get_bytes(self):
 		e = self.fencode(self)
-		return pack('>BH', 3, len(e)) + e
+		return pack('!BH', 3, len(e)) + e
 
 	@classmethod
 	def fdecode(_cls, s):
@@ -194,7 +199,7 @@ class TStr(str):
 	def frombytes(_cls, b, d):
 		if not b:
 			return (_cls(d), 0)
-		tv, sz = unpack('>BH', b[:3])
+		tv, sz = unpack('!BH', b[:3])
 		assert(tv == 3)
 		return (_cls(_cls.fdecode(b[3:3 + sz])), sz + 3)
 
@@ -207,7 +212,7 @@ class TStrArray(tuple):
 		if not b:
 			return (_cls(d), 0)
 
-		tv, totlen, nr = unpack('>BHH', b[:5])
+		tv, totlen, nr = unpack('!BHH', b[:5])
 		assert(tv == 6)
 		ofs = 5
 		out = list()
@@ -227,7 +232,7 @@ class TStr2Array(tuple):
 		if not b:
 			return (_cls(d), 0)
 
-		tv, totlen_hi, totlen, nr = unpack('>BBHH', b[:6])
+		tv, totlen_hi, totlen, nr = unpack('!BBHH', b[:6])
 		assert(tv == 9)
 		ofs = 6
 		out = list()
@@ -247,12 +252,12 @@ class TBoolArray(tuple):
 		if not b:
 			return (_cls(d), 0)
 
-		(tv, nr) = unpack('>BH', b[:3])
+		(tv, nr) = unpack('!BH', b[:3])
 		assert(tv == 10)
 		ofs = 3
 		out = list()
 		for i in xrange(nr):
-			s = TBool(unpack('>B', b[ofs])[0])
+			s = TBool(unpack('!B', b[ofs])[0])
 			out.append(s)
 			ofs += 1
 

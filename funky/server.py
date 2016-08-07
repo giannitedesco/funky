@@ -37,15 +37,15 @@ class SoundServerMsg(Message):
 	_msgtype = 19
 
 class PingServerMsg(Message):
-	_fields = ('payload',)
-	_defaults = ('' ,)
-	_types = (TStr,)
+	_fields = ()
+	_defaults = ()
+	_types = ()
 	_msgtype = 23
 
 class PongServerMsg(Message):
-	_fields = ('payload',)
-	_defaults = ('' ,)
-	_types = (TStr,)
+	_fields = ()
+	_defaults = ()
+	_types = ()
 	_msgtype = 24
 
 class RefreshServerMsg(Message):

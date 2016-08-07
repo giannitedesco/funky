@@ -4,15 +4,34 @@ from twisted.internet import gtk3reactor, protocol
 from twisted.internet.protocol import Protocol, ClientCreator
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gio
+from gi.repository import Gtk, Gio, GObject
 from funky import *
 from struct import unpack
 
 reactor = gtk3reactor.install()
 
+def encrypt(x):
+	key = '$Revision: 1.183 $'
+	x = client.LoginClientMsg(
+		enctyp = 'XORP',
+		enckey = key,
+		nam = xorp(key, x.nam),
+		pwd = xorp(key, x.pwd),
+		client_type = xorp(key, x.client_type),
+		client_id = xorp(key, x.client_id),
+		jver = xorp(key, x.jver),
+		osver = xorp(key, x.osver),
+		client_ver = xorp(key, x.client_ver),
+		mac = xorp(key, x.mac),
+	)
+
+	return x
+
 class FunkProto(Protocol):
 	def __init__(self, owner):
 		self.owner = owner
+		self.f = open('tx.log', 'w')
+
 	def connectionMade(self):
 		self.owner.conn_made(self)
 	def dataReceived(self, data):
@@ -20,19 +39,30 @@ class FunkProto(Protocol):
 	def connectionLost(self, reason):
 		self.owner.conn_lost(reason)
 
-	def first_init(self):
-		x = proto.InitMessage()
-		self.tx(x)
-
 	def tx(self, d):
-		print self, d
-		self.transport.write(d.get_bytes())
+		b = d.get_bytes()
+		self.f.write(b)
+		self.f.flush()
+		self.transport.write(b)
 
 class FunkWindow(Gtk.Window):
+	__gsignals__ = {
+		'rx_ping': (GObject.SIGNAL_RUN_LAST, None, (object, )),
+	}
+	__disp = {
+		server.PingServerMsg: 'rx_ping',
+	}
+
+	def on_rx_ping(self, _, msg):
+		self.pong()
+
 	def __init__(self):
 		super(FunkWindow, self).__init__(type =
 						Gtk.WindowType.TOPLEVEL)
+
+		self.connect('rx_ping', self.on_rx_ping)
 		self.connect('destroy', self.destroy)
+
 		self.set_default_size(320, 280)
 		hb = Gtk.HeaderBar()
 		hb.set_show_close_button(True)
@@ -46,39 +76,89 @@ class FunkWindow(Gtk.Window):
 
 		self.f = open('rx.log', 'w')
 
+	def first_init(self):
+		x = client.InitClientMsg()
+		self.tx(x)
+
+	def login(self, nam, pwd):
+		x = client.LoginClientMsg(
+			nam = nam,
+			pwd = pwd,
+			osver = 'amd64-4.4.0-31-generic-Linux',
+			mac = '1015660640995 MAC:201564d3cb780 /fe80:0:0:0:d0e5:adff:feba:8c0%lxcbr0/10.0.3.1- MAC:a434d9c551ca/fe80:0:0:0:a634:d9ff:fec5:51ca%wlp4s0/172.20.10.5'
+	)
+		x = encrypt(x)
+		self.tx(x)
+
+	def refresh(self):
+		x = client.RefreshClientMsg()
+		self.tx(x)
+
+	def game_start(self):
+		x = client.GameStartClientMsg()
+		self.tx(x)
+
+	def tool_init(self, tool):
+		x = client.ToolClientMsg(tool = tool)
+		self.tx(x)
+
+	def pong(self):
+		print 'PONG'
+		x = client.PingClientMsg()
+		self.tx(x)
+
+	def cmd(self, cmd):
+		x = client.CmdClientMsg(cmd = cmd)
+		self.tx(x)
+
 	def conn_made(self, p):
 		self.__p = p
-		x = proto.InitMessage()
-		self.tx(x)
+		self.first_init()
+		self.login('funky1337', '')
+		self.refresh()
+		self.game_start()
+		self.refresh()
+		for x in ('BackTool', 'LobbyTool', 'UserGameTool',
+				'GatherTool', 'TrennTool', 'NewsTool',
+				'UserInfoTool', 'UserListTool', 'ChannelTool',
+				'HelpTool', 'ArbeitsplatzTool', 'LastGameTool',
+				'RemoteCmdTool'):
+			self.tool_init(x)
+		self.cmd('/ghook olli666')
+		self.cmd('/join')
 
 	def conn_lost(self, reason):
 		print 'conn_lost', reason
 		self.__p = None
 
 	def rx_msg(self, t, b):
-		c = proto.msgmap.get(t, None)
+		c = server.msgmap.get(t, None)
 		if c is None:
-			print 'UNKNOWN(%r), %r'%(t, b)
+			#print 'UNKNOWN(%r), %r'%(t, b)
 			return
 
 		x = c.frombytes(b)
-		print x
 
-	def pump(self):
-		while len(self.__buf) >= 5:
-			(hi, lo, t) = unpack('>BHH', buf[:5])
-			l = (hi << 16) | lo
-			assert(l >= 5)
-			b = buf[5:l]
+		sig = self.__disp.get(c, None)
+		if sig is None:
+			print 'UNHANDLED', x
+			return
 
-			self.__buf = self.__buf[l:]
-			self.rx_msg(t, b)
+		self.emit(sig, x)
 
 	def rx(self, data):
 		self.f.write(data)
 		self.f.flush()
 		self.__buf += data
-		self.pump()
+		while len(self.__buf) >= 5:
+			(hi, lo, t) = unpack('>BHH', self.__buf[:5])
+			l = (hi << 16) | lo
+			assert(l >= 5)
+			if l > len(self.__buf):
+				break
+			b = self.__buf[5:l]
+			self.__buf = self.__buf[l:]
+			self.rx_msg(t, b)
 
 	def tx(self, d):
 		if self.__p is None:

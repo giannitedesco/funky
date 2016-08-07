@@ -23,8 +23,8 @@ class LoginClientMsg(Message):
 			'client_type', 'client_id', 'jver', 'osver',
 			'client_ver', 'mac')
 	_defaults = ('PLAIN' ,'', 'name', '',
-			'Client', 'BSW', '1.8.0_101', 'sparc-1.0-SunOS',
-			'-- Client $Revision: 1.183 $ (Client)', '')
+		'Client', 'BSW', '1.8.0_101', 'sparc-1.0-SunOS',
+		'-- Client $Revision: 1.183 $ (Client)\n-- SelfClient $Revision: 1.77 $', '')
 	_types = (TStr, TStr, TStr, TStr,
 			TStr, TStr, TStr, TStr,
 			TStr, TStr)
