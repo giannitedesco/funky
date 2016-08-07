@@ -4,11 +4,69 @@ from twisted.internet import gtk3reactor, protocol
 from twisted.internet.protocol import Protocol, ClientCreator
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gio, GObject
+from gi.repository import Gtk, Gio, GObject, Pango
 from funky import *
 from struct import unpack
 
 reactor = gtk3reactor.install()
+
+class ServerUI(Gtk.Box):
+	def __setup_tags(self, buf):
+		tag = buf.create_tag('font')
+		tag.set_property('font', 'Lucida Console 8')
+
+		tag = buf.create_tag('bold')
+		tag.set_property('weight', Pango.Weight.BOLD)
+
+		for x in ['red', 'blue', 'green',
+				'cyan', 'magenta', 'yellow',
+				'purple', 'black',
+				'dark blue', 'dark green']:
+			tag = buf.create_tag(x)
+			tag.set_property('foreground', x)
+			tag.set_property('foreground-set', True)
+
+	def __init__(self):
+		super(ServerUI, self).__init__(\
+				orientation = Gtk.Orientation.VERTICAL,
+				spacing = 6)
+
+		self.text = Gtk.TextView()
+		self.text.set_editable(False)
+		self.text.set_cursor_visible(False)
+		self.text.set_wrap_mode(Gtk.WrapMode.WORD)
+		self.__setup_tags(self.text.get_buffer())
+		scr = Gtk.ScrolledWindow()
+		scr.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+		scr.add(self.text)
+
+		self.pack_start(Gtk.Label('Server Messages'), False, True, 0)
+		self.pack_start(scr, True, True, 0)
+
+	def msg(self, msg, tags = []):
+		tags.append('font')
+		buf = self.text.get_buffer()
+		i = buf.get_iter_at_offset(buf.get_char_count())
+		buf.place_cursor(i)
+		buf.insert_with_tags_by_name(i, msg, *tags)
+		i = buf.get_iter_at_offset(buf.get_char_count())
+		buf.place_cursor(i)
+
+		if not '\n' in msg:
+			return
+
+		mark = buf.create_mark(None, i, left_gravity = True)
+		self.text.scroll_to_mark(mark, 0.0, False, 0.0, 0.0)
+
+	def on_rx_cmd(self, _, msg):
+		self.msg('<<< ' + msg.cmd + '\n', ['bold'])
+
+	def on_rx(self, _, msg):
+		self.msg('<<< ' + str(msg) + '\n', ['dark green'])
+
+	def on_tx(self, _, msg):
+		self.msg('>>> ' + str(msg) + '\n', ['purple'])
+		return
 
 def encrypt(x):
 	key = '$Revision: 1.183 $'
@@ -47,10 +105,15 @@ class FunkProto(Protocol):
 
 class FunkWindow(Gtk.Window):
 	__gsignals__ = {
+		'rx_msg': (GObject.SIGNAL_RUN_LAST, None, (object, )),
+		'tx_msg': (GObject.SIGNAL_RUN_LAST, None, (object, )),
+		'rx_cmd': (GObject.SIGNAL_RUN_LAST, None, (object, )),
+		'tx_cmd': (GObject.SIGNAL_RUN_LAST, None, (object, )),
 		'rx_ping': (GObject.SIGNAL_RUN_LAST, None, (object, )),
 	}
 	__disp = {
 		server.PingServerMsg: 'rx_ping',
+		server.CmdServerMsg: 'rx_cmd',
 	}
 
 	def on_rx_ping(self, _, msg):
@@ -63,18 +126,45 @@ class FunkWindow(Gtk.Window):
 		self.connect('rx_ping', self.on_rx_ping)
 		self.connect('destroy', self.destroy)
 
+		self.f = open('rx.log', 'w')
+		self.__buf = ''
+		self.__p = None
+		self.__cr = ClientCreator(reactor, FunkProto, self)
+		self.__c = self.__cr.connectTCP('game.brettspielwelt.de', 7670)
+
 		self.set_default_size(320, 280)
 		hb = Gtk.HeaderBar()
 		hb.set_show_close_button(True)
 		hb.props.title = 'FunKlient'
 		self.set_titlebar(hb)
 
-		self.__buf = ''
-		self.__p = None
-		self.__cr = ClientCreator(reactor, FunkProto, self)
-		self.__c = self.__cr.connectTCP('game.brettspielwelt.de', 7670)
+		self.stack = Gtk.Stack()
+		self.stack.set_transition_type(\
+				Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
+		self.stack.set_transition_duration(500)
 
-		self.f = open('rx.log', 'w')
+		c = ServerUI()
+		self.connect('rx_msg', c.on_rx)
+		self.connect('rx_cmd', c.on_rx_cmd)
+		self.connect('tx_msg', c.on_tx)
+		self.stack.add_titled(c, 'server', 'Server Messages')
+		self.stack.child_set_property(c, 'icon-name',
+					'accessories-dictionary-symbolic')
+
+		vb = Gtk.Box(orientation = Gtk.Orientation.VERTICAL,
+				spacing = 6)
+		vb.pack_start(self.stack, True, True, 0)
+		vb.pack_start(self.stack, True, True, 0)
+		self.add(vb)
+
+		stack_switcher = Gtk.StackSwitcher()
+		stack_switcher.set_stack(self.stack)
+		hb = Gtk.HeaderBar()
+		hb.set_show_close_button(True)
+		hb.props.title = 'FunKlient'
+		hb.pack_end(stack_switcher)
+		self.set_titlebar(hb)
+
 
 	def first_init(self):
 		x = client.InitClientMsg()
@@ -103,7 +193,6 @@ class FunkWindow(Gtk.Window):
 		self.tx(x)
 
 	def pong(self):
-		print 'PONG'
 		x = client.PingClientMsg()
 		self.tx(x)
 
@@ -139,9 +228,10 @@ class FunkWindow(Gtk.Window):
 
 		x = c.frombytes(b)
 
+		self.emit('rx_msg', x)
+
 		sig = self.__disp.get(c, None)
 		if sig is None:
-			print 'UNHANDLED', x
 			return
 
 		self.emit(sig, x)
@@ -164,6 +254,7 @@ class FunkWindow(Gtk.Window):
 		if self.__p is None:
 			print '%r NOT SENT'%d
 			return
+		self.emit('tx_msg', d)
 		self.__p.tx(d)
 
 	def destroy(self, *_):
