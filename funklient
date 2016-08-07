@@ -19,19 +19,23 @@ reactor = gtk3reactor.install()
 class FunkProto(Protocol):
 	def __init__(self, owner):
 		self.owner = owner
-		self.f = open('tx.log', 'w')
+		self.txlog = open('tx.log', 'w')
+		self.rxlog = open('rx.log', 'w')
 
 	def connectionMade(self):
 		self.owner.conn_made(self)
-	def dataReceived(self, data):
-		self.owner.rx(data)
 	def connectionLost(self, reason):
 		self.owner.conn_lost(reason)
 
+	def dataReceived(self, data):
+		self.rxlog.write(data)
+		self.rxlog.flush()
+		self.owner.rx(data)
+
 	def tx(self, d):
 		b = d.get_bytes()
-		self.f.write(b)
-		self.f.flush()
+		self.txlog.write(b)
+		self.txlog.flush()
 		self.transport.write(b)
 
 class FunkWindow(Gtk.Window):
@@ -57,7 +61,6 @@ class FunkWindow(Gtk.Window):
 		self.connect('rx_ping', self.on_rx_ping)
 		self.connect('destroy', self.destroy)
 
-		self.f = open('rx.log', 'w')
 		self.__buf = ''
 		self.__p = None
 		self.__cr = ClientCreator(reactor, FunkProto, self)
@@ -179,7 +182,7 @@ class FunkWindow(Gtk.Window):
 			pwd = pwd,
 			osver = 'amd64-4.4.0-31-generic-Linux',
 			mac = '1015660640995 MAC:201564d3cb780 /fe80:0:0:0:d0e5:adff:feba:8c0%lxcbr0/10.0.3.1- MAC:a434d9c551ca/fe80:0:0:0:a634:d9ff:fec5:51ca%wlp4s0/172.20.10.5'
-	)
+		)
 		x = encrypt_login(x)
 		self.tx(x)
 
@@ -274,8 +277,6 @@ class FunkWindow(Gtk.Window):
 		self.emit(sig, x)
 
 	def rx(self, data):
-		self.f.write(data)
-		self.f.flush()
 		self.__buf += data
 		while len(self.__buf) >= 5:
 			(hi, lo, t) = unpack('>BHH', self.__buf[:5])
