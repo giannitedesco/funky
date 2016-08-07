@@ -70,18 +70,22 @@ class FunkWindow(Gtk.Window):
 			self.server_win.rx_msg(msg)
 
 		def ps_cb(_, p, s):
-			print 'phase %d, stufe %d'%(p, s)
+			if (p, s) == (0, 0):
+				return
+			pstr = ('auction',
+				'buy resources',
+				'build cities',
+				'fire plants')
+			p = pstr[s]
+			hb = self.get_titlebar()
+			hb.props.title = 'FunKlient: [stufe-%d %s]'%(s + 1, p)
 		def money_cb(_, money):
-			print 'money', money
 			self.game_win.update_player_money(money)
 		def players_cb(_, nr, players):
-			print 'players', nr, players
 			self.game_win.update_player_names(nr, players)
 		def plants_cb(_, plants):
-			print 'plants', plants
 			self.game_win.update_player_plants(plants)
 		def nr_city_cb(_, nr_city):
-			print 'nr_city', nr_city
 			self.game_win.update_player_cities(nr_city)
 
 		def kb_alt_1(*_):
@@ -179,7 +183,8 @@ class FunkWindow(Gtk.Window):
 		if online:
 			self.__from_net()
 		else:
-			self.__from_file('rx.log')
+			#self.__from_file('rx.log')
+			pass
 
 	def first_init(self):
 		x = client.InitClientMsg()
@@ -266,7 +271,6 @@ class FunKlient(Gtk.Application):
 		window = FunkWindow()
 		window.show_all()
 		self.add_window(window)
-
 
 def main():
 	app = FunKlient()
