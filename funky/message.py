@@ -170,6 +170,7 @@ class TInt3Array(tuple):
 class TStr(str):
 	def fencode(self, s):
 		ret = ''
+		s = s.decode('utf-8').encode('iso-8859-1')
 		for c in map(ord, s):
 			if c >= 1 and c <= 127:
 				ret += chr(c)
@@ -186,15 +187,35 @@ class TStr(str):
 	def fdecode(_cls, s):
 		ret = ''
 		a = 0
+		cnt = 1
 		for c in map(ord, s):
-			if (c & 0xc0) == 0xc0:
-				a = (c & 0x1f) << 6
+			if (c & 0xe0) == 0xe0:
+				assert(cnt == 1)
+				a = (c & 0x0f)
+				cnt = 3
+			elif (c & 0xc0) == 0xc0:
+				assert(cnt == 1)
+				a = (c & 0x1f)
+				cnt = 2
+			elif c & 0x80:
+				assert(cnt == 2 or cnt == 1)
+				a <<= 6
+				a |= (c & 0x3f)
 			else:
-				if c & 0x80:
-					c &= 0x3f
-				ret += chr(a | c)
+				a <<= 6
+				a |= c
+
+			cnt -= 1
+
+			if not cnt:
+				if a > 255:
+					x = chr((a >> 8) & 0xff) + chr(a & 0xff)
+					ret += x
+				else:
+					ret += chr(a)
 				a = 0
-		return ret
+				cnt = 1
+		return ret.decode('iso-8859-1').encode('utf8')
 	@classmethod
 	def frombytes(_cls, b, d):
 		if not b:
