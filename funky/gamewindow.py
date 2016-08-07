@@ -12,19 +12,19 @@ class PlantList(Gtk.IconView):
 
 		s = Gtk.ListStore(Pixbuf, str)
 
-		for plant in PlantPixbufs():
-			s.append((plant, 'Plant'))
+		for i, plant in enumerate(PlantPixbufs()):
+			s.append((plant, 'Card %d'%i))
 			continue
 
 		self.set_model(s)
 		self.set_pixbuf_column(0)
 		self.set_text_column(1)
 
-		self.set_spacing(0)
-		self.set_row_spacing(0)
-		self.set_column_spacing(0)
-		self.set_item_padding(0)
-		self.set_item_width(42)
+		self.set_spacing(2)
+		self.set_row_spacing(2)
+		self.set_column_spacing(2)
+		self.set_item_padding(2)
+		self.set_item_width(40)
 
 class GameWindow(Gtk.Box):
 	def __init__(self):
