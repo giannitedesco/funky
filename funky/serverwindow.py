@@ -79,13 +79,16 @@ class ServerWindow(Gtk.Box):
 		mark = buf.create_mark(None, i, left_gravity = True)
 		self.text.scroll_to_mark(mark, 0.0, False, 0.0, 0.0)
 
-	def on_rx_cmd(self, _, msg):
-		self.msg('<<< ' + msg.cmd + '\n', ['bold'])
+	def log(self, s):
+		self.msg('<<< ' + s + '\n')
 
-	def on_rx(self, _, msg):
+	def chat_msg(self, s):
+		self.msg('<<< ' + s + '\n', ['bold'])
+
+	def rx_msg(self, msg):
 		self.msg('<<< ' + str(msg) + '\n', ['dark green'])
 
-	def on_tx(self, _, msg):
+	def tx_msg(self, msg):
 		self.msg('>>> ' + str(msg) + '\n', ['purple'])
 		return
 

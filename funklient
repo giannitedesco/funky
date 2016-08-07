@@ -18,6 +18,7 @@ reactor = gtk3reactor.install()
 
 class FunkProto(Protocol):
 	def __init__(self, owner):
+		#super(FunkProto, self).__init__()
 		self.owner = owner
 		self.txlog = open('tx.log', 'w')
 		self.rxlog = open('rx.log', 'w')
@@ -32,39 +33,39 @@ class FunkProto(Protocol):
 		self.rxlog.flush()
 		self.owner.rx(data)
 
-	def tx(self, d):
-		b = d.get_bytes()
+	def tx(self, b):
 		self.txlog.write(b)
 		self.txlog.flush()
 		self.transport.write(b)
 
 class FunkWindow(Gtk.Window):
-	__gsignals__ = {
-		'rx_msg': (GObject.SIGNAL_RUN_LAST, None, (object, )),
-		'tx_msg': (GObject.SIGNAL_RUN_LAST, None, (object, )),
-		'rx_cmd': (GObject.SIGNAL_RUN_LAST, None, (object, )),
-		'tx_cmd': (GObject.SIGNAL_RUN_LAST, None, (object, )),
-		'rx_ping': (GObject.SIGNAL_RUN_LAST, None, (object, )),
-	}
-	__disp = {
-		server.PingServerMsg: 'rx_ping',
-		server.CmdServerMsg: 'rx_cmd',
-	}
-
-	def on_rx_ping(self, _, msg):
-		self.pong()
-
 	def __init__(self):
+		def swin_cb(_, s):
+			self.game.cl_cmd(s)
+		def tx_cb(_, msg):
+			self.tx(msg)
+		def chat_cb(_, s):
+			self.server_win.chat_msg(s)
+		def log_cb(_, s):
+			self.server_win.log(s)
+		def unhandled_cb(_, msg):
+			self.server_win.rx_msg(msg)
+
 		super(FunkWindow, self).__init__(type =
 						Gtk.WindowType.TOPLEVEL)
 
-		self.connect('rx_ping', self.on_rx_ping)
 		self.connect('destroy', self.destroy)
+
+		self.game = FunkGame()
+		self.game.connect('tx_msg', tx_cb)
+		self.game.connect('chat_msg', chat_cb)
+		self.game.connect('log', log_cb)
+		self.game.connect('rx_unhandled', unhandled_cb)
 
 		self.__buf = ''
 		self.__p = None
 		self.__cr = ClientCreator(reactor, FunkProto, self)
-		#self.__c = self.__cr.connectTCP('game.brettspielwelt.de', 7670)
+		self.__c = self.__cr.connectTCP('game.brettspielwelt.de', 7670)
 
 		self.set_default_size(320, 280)
 		hb = Gtk.HeaderBar()
@@ -89,14 +90,13 @@ class FunkWindow(Gtk.Window):
 				Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
 		self.stack.set_transition_duration(500)
 
-		c = ServerWindow()
-		c.connect('server_cmd', self.server_cmd)
-		self.connect('rx_msg', c.on_rx)
-		self.connect('rx_cmd', c.on_rx_cmd)
-		self.connect('tx_msg', c.on_tx)
-		self.stack.add_titled(c, 'server', 'Server Messages')
-		self.stack.child_set_property(c, 'icon-name',
-					'accessories-dictionary-symbolic')
+		self.server_win = ServerWindow()
+		self.server_win.connect('server_cmd', swin_cb)
+		self.stack.add_titled(self.server_win,
+					'server',
+					'Server Messages')
+		self.stack.child_set_property(self.server_win,
+				'icon-name', 'accessories-dictionary-symbolic')
 
 		vb = Gtk.Box(orientation = Gtk.Orientation.VERTICAL,
 				spacing = 6)
@@ -111,66 +111,6 @@ class FunkWindow(Gtk.Window):
 		hb.props.title = 'FunKlient'
 		hb.pack_end(stack_switcher)
 		self.set_titlebar(hb)
-
-	def game_cmd(self, s):
-		def pass_cb(cmd, args):
-			self.bid(-1, -1)
-
-		def bid_cb(cmd, args):
-			k, p = args.split(None, 2)
-			self.bid(int(k), int(p))
-
-		def rs_cb(cmd, args):
-			k, o, m, ke = args.split(None, 3)
-			self.buy_rs(int(k), int(o), int(m), int(ke))
-
-		def build_cb(cmd, args):
-			self.build(0, int(args))
-
-		def nobuild_cb(cmd, args):
-			self.build(1, 0)
-
-		def fire_cb(cmd, args):
-			a, b, c, d = args.split(None, 3)
-			self.fire(int(a), int(b), int(c), int(d))
-
-		def demolish_cb(cmd, args):
-			self.demolish(0, int(args))
-
-		def rsmove_cb(cmd, args):
-			frm, to, rs = args.split(None, 2)
-			self.rs_move(int(frm), int(to), int(cb))
-
-		__disp = {
-			'pass': pass_cb,
-			'bid': bid_cb,
-			'rs': rs_cb,
-			'build': build_cb,
-			'nobuild': nobuild_cb,
-			'fire': fire_cb,
-			'demolish': demolish_cb,
-			'rsmove': rsmove_cb,
-		}
-		try:
-			cmd, args = s.split(None, 1)
-		except ValueError:
-			cmd = s
-			args = None
-		cb = __disp.get(cmd, None)
-		if cb is None:
-			print 'GCMD', cmd, args
-		else:
-			cb(cmd, args)
-
-	def server_cmd(self, _, s):
-		if len(s) >=2 and s[:2] == '//':
-			try:
-				self.game_cmd(s[2:])
-			except Exception, e:
-				traceback.print_exc()
-				pass
-			return
-		self.cmd(s);
 
 	def first_init(self):
 		x = client.InitClientMsg()
@@ -198,47 +138,6 @@ class FunkWindow(Gtk.Window):
 		x = client.ToolClientMsg(tool = tool)
 		self.tx(x)
 
-	def pong(self):
-		x = client.PingClientMsg()
-		self.tx(x)
-
-	def cmd(self, cmd):
-		x = client.CmdClientMsg(cmd = cmd)
-		self.tx(x)
-
-	def demolish(self, plant):
-		self.action(0, plant, 0, 0, 0)
-
-	def fire(self, a, b, c, d):
-		self.action(0, a, b, c, d)
-
-	def buy_rs(self, coal, oil, trash, nuke):
-		self.action(0, coal, oil, trash, nuke)
-
-	def rs_move(self, frm, to, rs):
-		self.action(2, frm, to, rs, 0)
-
-	def build(self, act, s):
-		self.action(act, s, 0, 0, 0)
-
-	def bid(self, k, p):
-		if k < 0:
-			k = 0x3f
-		if p < 0:
-			p = 0x3f
-		code = (p << 6) | k
-		x = client.FunkenClientMsg(code = code)
-		self.tx(x)
-
-	def action(self, act, k, p, p1, p2):
-		code = (act << 28)
-		code |= k
-		code |= p << 6
-		code |= p1 << 12
-		code |= p2 << 18
-		x = client.FunkenClientMsg(code = code)
-		self.tx(x)
-
 	def conn_made(self, p):
 		login = open(join(environ['HOME'], '.bsw-account')).read()
 		nam, pwd = login.rstrip('\r\n').split(':', 1)
@@ -260,22 +159,6 @@ class FunkWindow(Gtk.Window):
 		print 'conn_lost', reason
 		self.__p = None
 
-	def rx_msg(self, t, b):
-		c = server.msgmap.get(t, None)
-		if c is None:
-			#print 'UNKNOWN(%r), %r'%(t, b)
-			return
-
-		x = c.frombytes(b)
-
-		self.emit('rx_msg', x)
-
-		sig = self.__disp.get(c, None)
-		if sig is None:
-			return
-
-		self.emit(sig, x)
-
 	def rx(self, data):
 		self.__buf += data
 		while len(self.__buf) >= 5:
@@ -286,14 +169,15 @@ class FunkWindow(Gtk.Window):
 				break
 			b = self.__buf[5:l]
 			self.__buf = self.__buf[l:]
-			self.rx_msg(t, b)
+			self.game.rx_msg(t, b)
 
 	def tx(self, d):
 		if self.__p is None:
 			print 'NOT SENT', d
 			return
-		self.emit('tx_msg', d)
-		self.__p.tx(d)
+		self.server_win.tx_msg(d)
+		b = d.get_bytes()
+		self.__p.tx(b)
 
 	def destroy(self, *_):
 		super(FunkWindow, self).destroy()

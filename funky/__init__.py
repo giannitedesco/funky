@@ -1,3 +1,4 @@
+from funkgame import FunkGame
 from message import Message
 from serverwindow import ServerWindow
 import client, server
@@ -31,6 +32,7 @@ __all__ = (
 		'encrypt_login',
 		'server',
 		'xorp',
+		'FunkGame',
 		'Message',
 		'ServerWindow',
 	)
