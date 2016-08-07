@@ -48,8 +48,8 @@ class LangInfoClientMsg(Message):
 	_types = (TStr2Array,)
 	_msgtype = 44
 
-class FunkenCardClientMsg(Message):
-	_fields = ('card',)
+class FunkenClientMsg(Message):
+	_fields = ('code',)
 	_defaults = (-1,)
 	_types = (TInt,)
 	_msgtype = 200
@@ -92,7 +92,7 @@ msgmap = dict(((x._msgtype, x) for x in (\
 		PingClientMsg,
 		RefreshClientMsg,
 		LangInfoClientMsg,
-		FunkenCardClientMsg,
+		FunkenClientMsg,
 		PlayerWantedClientMsg,
 		GameStartClientMsg,
 		RoomChangeClientMsg,

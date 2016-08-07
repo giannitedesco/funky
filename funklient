@@ -4,13 +4,36 @@ from twisted.internet import gtk3reactor, protocol
 from twisted.internet.protocol import Protocol, ClientCreator
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gio, GObject, Pango
+from gi.repository import Gtk, Gdk, Gio, GObject, Pango
 from funky import *
 from struct import unpack
+from os import environ
+from os.path import join
+import traceback
 
 reactor = gtk3reactor.install()
 
+class CmdEntry(Gtk.Entry):
+	__gsignals__ = {
+		'send': (GObject.SIGNAL_RUN_LAST, None, (str, )),
+	}
+	def send(self, s):
+		self.emit('send', s)
+
+	def __activate(self, _):
+		s = self.get_text()
+		self.set_text('')
+		if len(s):
+			self.send(s)
+
+	def __init__(self):
+		super(CmdEntry, self).__init__()
+		self.connect('activate', self.__activate)
+
 class ServerUI(Gtk.Box):
+	__gsignals__ = {
+		'server_cmd': (GObject.SIGNAL_RUN_LAST, None, (str, )),
+	}
 	def __setup_tags(self, buf):
 		tag = buf.create_tag('font')
 		tag.set_property('font', 'Lucida Console 8')
@@ -26,10 +49,16 @@ class ServerUI(Gtk.Box):
 			tag.set_property('foreground', x)
 			tag.set_property('foreground-set', True)
 
+	def __cb(self, _, s):
+		self.emit('server_cmd', s)
+
 	def __init__(self):
 		super(ServerUI, self).__init__(\
 				orientation = Gtk.Orientation.VERTICAL,
 				spacing = 6)
+
+		self.entry = CmdEntry()
+		self.entry.connect('send', self.__cb)
 
 		self.text = Gtk.TextView()
 		self.text.set_editable(False)
@@ -40,8 +69,12 @@ class ServerUI(Gtk.Box):
 		scr.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
 		scr.add(self.text)
 
+		scr.set_can_focus(False)
+		self.text.set_can_focus(False)
+
 		self.pack_start(Gtk.Label('Server Messages'), False, True, 0)
 		self.pack_start(scr, True, True, 0)
+		self.pack_start(self.entry, False, True, 0)
 
 	def msg(self, msg, tags = []):
 		tags.append('font')
@@ -130,7 +163,7 @@ class FunkWindow(Gtk.Window):
 		self.__buf = ''
 		self.__p = None
 		self.__cr = ClientCreator(reactor, FunkProto, self)
-		self.__c = self.__cr.connectTCP('game.brettspielwelt.de', 7670)
+		#self.__c = self.__cr.connectTCP('game.brettspielwelt.de', 7670)
 
 		self.set_default_size(320, 280)
 		hb = Gtk.HeaderBar()
@@ -138,12 +171,25 @@ class FunkWindow(Gtk.Window):
 		hb.props.title = 'FunKlient'
 		self.set_titlebar(hb)
 
+		accel = Gtk.AccelGroup()
+		accel.connect(Gdk.keyval_from_name('Q'),
+				Gdk.ModifierType.CONTROL_MASK,
+				0,
+				self.destroy)
+		accel.connect(Gdk.keyval_from_name('W'),
+				Gdk.ModifierType.CONTROL_MASK,
+				0,
+				self.destroy)
+		self.add_accel_group(accel)
+
+		self.set_mnemonic_modifier(0)
 		self.stack = Gtk.Stack()
 		self.stack.set_transition_type(\
 				Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
 		self.stack.set_transition_duration(500)
 
 		c = ServerUI()
+		c.connect('server_cmd', self.server_cmd)
 		self.connect('rx_msg', c.on_rx)
 		self.connect('rx_cmd', c.on_rx_cmd)
 		self.connect('tx_msg', c.on_tx)
@@ -165,6 +211,65 @@ class FunkWindow(Gtk.Window):
 		hb.pack_end(stack_switcher)
 		self.set_titlebar(hb)
 
+	def game_cmd(self, s):
+		def pass_cb(cmd, args):
+			self.bid(-1, -1)
+
+		def bid_cb(cmd, args):
+			k, p = args.split(None, 2)
+			self.bid(int(k), int(p))
+
+		def rs_cb(cmd, args):
+			k, o, m, ke = args.split(None, 3)
+			self.buy_rs(int(k), int(o), int(m), int(ke))
+
+		def build_cb(cmd, args):
+			self.build(0, int(args))
+
+		def nobuild_cb(cmd, args):
+			self.build(1, 0)
+
+		def fire_cb(cmd, args):
+			a, b, c, d = args.split(None, 3)
+			self.fire(int(a), int(b), int(c), int(d))
+
+		def demolish_cb(cmd, args):
+			self.demolish(0, int(args))
+
+		def rsmove_cb(cmd, args):
+			frm, to, rs = args.split(None, 2)
+			self.rs_move(int(frm), int(to), int(cb))
+
+		__disp = {
+			'pass': pass_cb,
+			'bid': bid_cb,
+			'rs': rs_cb,
+			'build': build_cb,
+			'nobuild': nobuild_cb,
+			'fire': fire_cb,
+			'demolish': demolish_cb,
+			'rsmove': rsmove_cb,
+		}
+		try:
+			cmd, args = s.split(None, 1)
+		except ValueError:
+			cmd = s
+			args = None
+		cb = __disp.get(cmd, None)
+		if cb is None:
+			print 'GCMD', cmd, args
+		else:
+			cb(cmd, args)
+
+	def server_cmd(self, _, s):
+		if len(s) >=2 and s[:2] == '//':
+			try:
+				self.game_cmd(s[2:])
+			except Exception, e:
+				traceback.print_exc()
+				pass
+			return
+		self.cmd(s);
 
 	def first_init(self):
 		x = client.InitClientMsg()
@@ -200,10 +305,46 @@ class FunkWindow(Gtk.Window):
 		x = client.CmdClientMsg(cmd = cmd)
 		self.tx(x)
 
+	def demolish(self, plant):
+		self.action(0, plant, 0, 0, 0)
+
+	def fire(self, a, b, c, d):
+		self.action(0, a, b, c, d)
+
+	def buy_rs(self, coal, oil, trash, nuke):
+		self.action(0, coal, oil, trash, nuke)
+
+	def rs_move(self, frm, to, rs):
+		self.action(2, frm, to, rs, 0)
+
+	def build(self, act, s):
+		self.action(act, s, 0, 0, 0)
+
+	def bid(self, k, p):
+		if k < 0:
+			k = 0x3f
+		if p < 0:
+			p = 0x3f
+		code = (p << 6) | k
+		x = client.FunkenClientMsg(code = code)
+		self.tx(x)
+
+	def action(self, act, k, p, p1, p2):
+		code = (act << 28)
+		code |= k
+		code |= p << 6
+		code |= p1 << 12
+		code |= p2 << 18
+		x = client.FunkenClientMsg(code = code)
+		self.tx(x)
+
 	def conn_made(self, p):
+		login = open(join(environ['HOME'], '.bsw-account')).read()
+		nam, pwd = login.rstrip('\r\n').split(':', 1)
+
 		self.__p = p
 		self.first_init()
-		self.login('funky1337', '')
+		self.login(nam, pwd)
 		self.refresh()
 		self.game_start()
 		self.refresh()
@@ -213,8 +354,6 @@ class FunkWindow(Gtk.Window):
 				'HelpTool', 'ArbeitsplatzTool', 'LastGameTool',
 				'RemoteCmdTool'):
 			self.tool_init(x)
-		self.cmd('/ghook olli666')
-		self.cmd('/join')
 
 	def conn_lost(self, reason):
 		print 'conn_lost', reason
@@ -252,7 +391,7 @@ class FunkWindow(Gtk.Window):
 
 	def tx(self, d):
 		if self.__p is None:
-			print '%r NOT SENT'%d
+			print 'NOT SENT', d
 			return
 		self.emit('tx_msg', d)
 		self.__p.tx(d)
