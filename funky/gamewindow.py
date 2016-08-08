@@ -5,6 +5,7 @@ from gi.repository import Gtk, GObject
 from plantlist import PlantList
 from playerlist import PlayerList
 from marketview import MarketView
+from mapview import MapView
 
 class GameWindow(Gtk.Box):
 	__gsignals__ = {
@@ -24,7 +25,7 @@ class GameWindow(Gtk.Box):
 
 		self.player_list = PlayerList()
 		self.market = MarketView(bid_cb, pass_cb)
-		self.map_window = PlantList()
+		self.map_window = MapView()
 
 		vbox = Gtk.Box(orientation = Gtk.Orientation.VERTICAL,
 					spacing = 5)
@@ -56,3 +57,6 @@ class GameWindow(Gtk.Box):
 
 	def update_market(self, cards_left, market):
 		self.market.update_market(cards_left, market)
+
+	def update_map(self, nr, dist):
+		self.map_window.set_map(nr, dist)

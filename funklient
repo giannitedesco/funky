@@ -94,6 +94,8 @@ class FunkWindow(Gtk.Window):
 			self.game_win.update_player_cities(nr_city)
 		def market_cb(_, cards_left, market):
 			self.game_win.update_market(cards_left, market)
+		def map_cb(_, nr, dists):
+			self.game_win.update_map(nr, dists)
 
 		def kb_alt_1(*_):
 			self.stack.set_visible_child_name('server')
@@ -118,6 +120,7 @@ class FunkWindow(Gtk.Window):
 		self.game.connect('update_plants', plants_cb)
 		self.game.connect('update_nr_city', nr_city_cb)
 		self.game.connect('update_market', market_cb)
+		self.game.connect('update_map', map_cb)
 
 		self.__buf = ''
 		self.__p = None
@@ -189,7 +192,7 @@ class FunkWindow(Gtk.Window):
 		hb.pack_end(stack_switcher)
 		self.set_titlebar(hb)
 
-		online = True
+		online = False
 		if online:
 			self.__from_net()
 		else:
@@ -236,7 +239,8 @@ class FunkWindow(Gtk.Window):
 				'UserInfoTool', 'UserListTool', 'ChannelTool',
 				'HelpTool', 'ArbeitsplatzTool', 'LastGameTool',
 				'RemoteCmdTool'):
-			self.tool_init(x)
+			#self.tool_init(x)
+			continue
 
 	def conn_lost(self, reason):
 		print 'conn_lost', reason

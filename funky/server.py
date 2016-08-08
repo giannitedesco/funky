@@ -60,8 +60,8 @@ class LangInfoServerMsg(Message):
 	_types = (TStr2Array,)
 	_msgtype = 44
 
-class FunkenBoardServerMsg(Message):
-	_fields = ('target', 'dist', 'card',)
+class FunkenMapServerMsg(Message):
+	_fields = ('target', 'dist', 'map',)
 	_defaults = ('', tuple(), -1)
 	_types = (TStr, TInt2Array, TInt)
 	_msgtype = 200
@@ -190,7 +190,7 @@ msgmap = dict(((x._msgtype, x) for x in (\
 		PongServerMsg,
 		RefreshServerMsg,
 		LangInfoServerMsg,
-		FunkenBoardServerMsg,
+		FunkenMapServerMsg,
 		FunkenPlayerServerMsg,
 		FunkenAuctionServerMsg,
 		FunkenCityServerMsg,

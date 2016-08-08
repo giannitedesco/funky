@@ -50,3 +50,10 @@ class PlantPixbufs(object):
 	def __getitem__(self, k):
 		return self.__map[k]
 
+def load_map(map_nr):
+	subdir = 'localized/en/images/Funkenschlag/'
+	path = join(base_dir, subdir)
+	fns = ('usa.jpg', 'deut.jpg',
+		'frankreich.jpg', 'italien.jpg', 'bw.jpg')
+	pix = Pixbuf.new_from_file(join(path, fns[map_nr]))
+	return pix

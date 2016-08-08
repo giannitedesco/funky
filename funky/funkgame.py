@@ -32,6 +32,8 @@ class FunkGame(GObject.GObject):
 			(GObject.SIGNAL_RUN_LAST, None, (object,)),
 		'update_market':
 			(GObject.SIGNAL_RUN_LAST, None, (int, object)),
+		'update_map':
+			(GObject.SIGNAL_RUN_LAST, None, (int, object)),
 	}
 
 	def __init__(self):
@@ -54,6 +56,8 @@ class FunkGame(GObject.GObject):
 		self.nr_city = ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0))
 		self.market = ()
 		self.cards_left = 0
+		self.map_nr = -1
+		self.dist = None
 
 	def tx(self, msg):
 		'Emits a message to transmit to server'
@@ -94,7 +98,7 @@ class FunkGame(GObject.GObject):
 	def update_players(self, nr, players):
 		if not players:
 			return
-		old_players = (nr, self.players)
+		old_players = (self.nr_players, self.players)
 		self.players = players
 		self.nr_players = nr
 		if (self.nr_players, self.players) == old_players:
@@ -104,7 +108,7 @@ class FunkGame(GObject.GObject):
 	def update_market(self, nr, market):
 		if not market:
 			return
-		old_market = (nr, self.market)
+		old_market = (self.cards_left, self.market)
 		self.market = market
 		self.cards_left = nr
 		if (self.cards_left, self.market) == old_market:
@@ -129,20 +133,28 @@ class FunkGame(GObject.GObject):
 			return
 		self.emit('update_nr_city', self.nr_city)
 
+	def update_map(self, nr, dist):
+		if not dist:
+			return
+		old_dists = (self.map_nr, self.dist)
+		self.dist = dist
+		self.map_nr = nr
+		if (self.map_nr, self.dist) == old_dists:
+			return
+		self.emit('update_map', self.cards_left, self.dist)
+
 	def dispatch(self, msg):
+		def nop_cb(msg):
+			return
 		def ping_cb(msg):
 			self.pong()
 		def chat_cb(msg):
 			self.chat(msg.cmd)
 
-		def auction_cb(msg):
-			phase = msg.phase_stufe & 0x3ff
-			stufe = msg.phase_stufe >> 10
-			self.update_ps(phase, stufe)
-
-			self.update_money(msg.money)
-
-			self.update_market(msg.cards_left, msg.market)
+		def map_cb(msg):
+			maps = ('usa.jpg', 'deut.jpg',
+				'frankreich.jpg', 'italien.jpg', 'bw.jpg')
+			self.update_map(msg.map, msg.dist)
 
 		def player_cb(msg):
 			self.round = msg.round
@@ -161,12 +173,32 @@ class FunkGame(GObject.GObject):
 			self.update_plants(msg.plants)
 			self.update_nr_city(msg.nr_city)
 
+		def auction_cb(msg):
+			phase = msg.phase_stufe & 0x3ff
+			stufe = msg.phase_stufe >> 10
+			self.update_ps(phase, stufe)
+
+			self.update_money(msg.money)
+
+			self.update_market(msg.cards_left, msg.market)
+
+		def materials_cb(msg):
+			return
+
+		def city_cb(msg):
+			return
+
 		disp = {
 			server.PingServerMsg: ping_cb,
 			server.CmdServerMsg: chat_cb,
-			server.FunkenAuctionServerMsg: auction_cb,
+			server.FunkenMapServerMsg: map_cb,
 			server.FunkenPlayerServerMsg: player_cb,
 			server.FunkenScoreServerMsg: score_cb,
+			server.FunkenAuctionServerMsg: auction_cb,
+			server.FunkenMaterialsServerMsg: materials_cb,
+			server.FunkenCityServerMsg: city_cb,
+			server.FunkenUnusedServerMsg: nop_cb,
+			server.FunkenAnimServerMsg: nop_cb,
 		}
 
 		# dispatch the message
