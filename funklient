@@ -58,15 +58,6 @@ class FunkWindow(Gtk.Window):
 		self.__c = self.__cr.connectTCP('game.brettspielwelt.de', 7670)
 
 	def __init__(self):
-		def bid_cb(_, index, price):
-			self.game.bid(index, price)
-		def pass_cb(_):
-			self.game.bid(-1, -1)
-		def buy_cb(_, k, o, m, ke):
-			self.game.buy_rs(k, o, m, ke)
-		def build_cb(_, city):
-			self.game.build(0, city)
-
 		def swin_cb(_, s):
 			self.game.cl_cmd(s)
 		def tx_cb(_, msg):
@@ -97,22 +88,6 @@ class FunkWindow(Gtk.Window):
 				hb.props.title = 'FunKlient'
 				return
 			hb.props.title = 'FunKlient: [stufe-%d %s]'%(s + 1, p)
-		def money_cb(_, money):
-			self.game_win.update_player_money(money)
-		def players_cb(_, nr, players):
-			self.game_win.update_player_names(nr, players)
-		def plants_cb(_, plants):
-			self.game_win.update_player_plants(plants)
-		def nr_city_cb(_, nr_city):
-			self.game_win.update_player_cities(nr_city)
-		def market_cb(_, cards_left, market):
-			self.game_win.update_market(cards_left, market)
-		def map_cb(_, nr, dists):
-			self.game_win.update_map(nr, dists)
-		def stock_cb(_, stock):
-			self.game_win.update_stock(stock)
-		def cities_cb(_, cities):
-			self.game_win.update_cities(cities)
 
 		def kb_alt_1(*_):
 			self.stack.set_visible_child_name('server')
@@ -124,22 +99,6 @@ class FunkWindow(Gtk.Window):
 						Gtk.WindowType.TOPLEVEL)
 
 		self.connect('destroy', self.destroy)
-
-		self.game = FunkGame()
-		self.game.connect('tx_msg', tx_cb)
-		self.game.connect('chat_msg', chat_cb)
-		self.game.connect('log', log_cb)
-		self.game.connect('rx_unhandled', unhandled_cb)
-
-		self.game.connect('update_ps', ps_cb)
-		self.game.connect('update_money', money_cb)
-		self.game.connect('update_players', players_cb)
-		self.game.connect('update_plants', plants_cb)
-		self.game.connect('update_nr_city', nr_city_cb)
-		self.game.connect('update_market', market_cb)
-		self.game.connect('update_map', map_cb)
-		self.game.connect('update_stock', stock_cb)
-		self.game.connect('update_cities', cities_cb)
 
 		self.__buf = ''
 		self.__p = None
@@ -180,10 +139,13 @@ class FunkWindow(Gtk.Window):
 		self.server_win.connect('server_cmd', swin_cb)
 
 		self.game_win = GameWindow()
-		self.game_win.connect('bid', bid_cb)
-		self.game_win.connect('pass', pass_cb)
-		self.game_win.connect('buy', buy_cb)
-		self.game_win.connect('build', build_cb)
+
+		self.game = self.game_win.game
+		self.game.connect('tx_msg', tx_cb)
+		self.game.connect('chat_msg', chat_cb)
+		self.game.connect('log', log_cb)
+		self.game.connect('rx_unhandled', unhandled_cb)
+		self.game.connect('update_ps', ps_cb)
 
 		self.stack.add_titled(self.server_win,
 					'server',

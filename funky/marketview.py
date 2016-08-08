@@ -1,6 +1,6 @@
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+from gi.repository import Gtk, GObject
 
 from plantlist import PlantList
 
@@ -57,7 +57,17 @@ class MarketRow(Gtk.ListBoxRow):
 		self.plants.update(plants)
 
 class MarketView(Gtk.ListBox):
-	def __init__(self, bid_cb, pass_cb):
+	__gsignals__ = {
+		'bid':
+			(GObject.SIGNAL_RUN_LAST, None, (int, int)),
+		'pass':
+			(GObject.SIGNAL_RUN_LAST, None, ()),
+	}
+	def __init__(self):
+		def bid_cb(idx, price):
+			self.emit('bid', idx, price)
+		def pass_cb():
+			self.emit('pass')
 		super(MarketView, self).__init__()
 		self.set_can_focus(False)
 		self.set_selection_mode(Gtk.SelectionMode.NONE)

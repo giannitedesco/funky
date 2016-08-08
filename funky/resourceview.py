@@ -1,6 +1,6 @@
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+from gi.repository import Gtk, GObject
 
 class ResourceRow(Gtk.ListBoxRow):
 	def __init__(self, name, count):
@@ -72,7 +72,13 @@ class ButtonRow(Gtk.ListBoxRow):
 				(k, o, m, ke))
 
 class ResourceView(Gtk.ListBox):
-	def __init__(self, buy_cb):
+	__gsignals__ = {
+		'buy':
+			(GObject.SIGNAL_RUN_LAST, None, (int, int, int, int)),
+	}
+	def __init__(self):
+		def buy_cb(k, o, m, ke):
+			self.emit('buy', k, o, m, e)
 		def cb(*_):
 			self.buttons.update_totals(*map(int, (self.coal,
 								self.oil,

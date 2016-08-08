@@ -2,7 +2,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('GdkPixbuf', '2.0')
 from gi.repository.GdkPixbuf import Pixbuf
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk, GObject
 
 import cairo
 from math import sqrt
@@ -114,15 +114,18 @@ def click(self, evt):
 		yd = y - evt.y
 		d = sqrt(xd * xd + yd * yd)
 		if d < 25:
-			self.build_cb(i)
+			self.emit('build', i)
 			break
 
 class MapView(Gtk.DrawingArea):
-	def __init__(self, build_cb):
+	__gsignals__ = {
+		'build':
+			(GObject.SIGNAL_RUN_LAST, None, (int, )),
+	}
+	def __init__(self):
 		super(MapView, self).__init__()
 		self.cities = None
 		self.houses = None
-		self.build_cb = build_cb
 
 		self.clear_map()
 		self.add_events(Gdk.EventMask.BUTTON_RELEASE_MASK
