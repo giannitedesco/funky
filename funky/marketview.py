@@ -23,10 +23,10 @@ class MarketRow(Gtk.ListBoxRow):
 		hbox = Gtk.Box(orientation = Gtk.Orientation.HORIZONTAL,
 					spacing = 20)
 
-		self.name = Gtk.Label(xalign = 0)
-		self.name.set_markup('<b>Market</b>')
+		name = Gtk.Label(xalign = 0)
+		name.set_markup('<b>Power Plant Auction</b>')
 
-		hbox.pack_start(self.name, True, True, 5)
+		hbox.pack_start(name, True, True, 5)
 		vbox.pack_start(hbox, True, True, 5)
 
 		self.plants = PlantList(indices = (-1 for x in xrange(8)))

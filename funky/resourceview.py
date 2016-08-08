@@ -25,9 +25,9 @@ class ResourceRow(Gtk.ListBoxRow):
 		self.p.set_can_focus(False)
 		self.p.set_value(0)
 
-		hbox.pack_start(self.name, True, True, 0)
-		hbox.pack_start(self.c, False, True, 0)
-		hbox.pack_start(self.p, False, True, 0)
+		hbox.pack_start(self.name, True, True, 5)
+		hbox.pack_start(self.c, False, True, 5)
+		hbox.pack_start(self.p, False, True, 5)
 		self.add(hbox)
 
 		self.set_can_focus(False)
@@ -88,6 +88,14 @@ class ResourceView(Gtk.ListBox):
 		self.set_can_focus(False)
 		self.set_selection_mode(Gtk.SelectionMode.NONE)
 
+		name_row = Gtk.ListBoxRow()
+		name = Gtk.Label(xalign = 0)
+		name.set_markup('<b>Resources Market</b>')
+		hbox = Gtk.Box(orientation = Gtk.Orientation.HORIZONTAL,
+					spacing = 5)
+		hbox.pack_start(name, True, True, 5)
+		name_row.add(hbox)
+
 		self.coal = ResourceRow('Coal', 0)
 		self.oil = ResourceRow('Oil', 0)
 		self.trash = ResourceRow('Trash', 0)
@@ -99,6 +107,7 @@ class ResourceView(Gtk.ListBox):
 		self.trash.p.connect('changed', cb)
 		self.nuclear.p.connect('changed', cb)
 
+		self.insert(name_row, -1)
 		self.insert(self.coal, -1)
 		self.insert(self.oil, -1)
 		self.insert(self.trash, -1)

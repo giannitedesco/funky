@@ -39,8 +39,8 @@ class GameWindow(Gtk.Box):
 			self.market.update_market(cards_left, market)
 		def map_cb(_, nr, dists):
 			self.map_window.set_map(nr, dists)
-		def stock_cb(_, stock):
-			self.stock.update_stock(*stock)
+		def stock_cb(_, rs):
+			self.rs.update_stock(*rs)
 		def cities_cb(_, cities):
 			self.map_window.update_cities(cities)
 
@@ -48,6 +48,7 @@ class GameWindow(Gtk.Box):
 				orientation = Gtk.Orientation.HORIZONTAL,
 				spacing = 6)
 
+		# Game object
 		self.game = FunkGame()
 		self.game.connect('update_ps', ps_cb)
 		self.game.connect('update_money', money_cb)
@@ -59,12 +60,52 @@ class GameWindow(Gtk.Box):
 		self.game.connect('update_stock', stock_cb)
 		self.game.connect('update_cities', cities_cb)
 
+		# Child windows
 		self.player_list = PlayerList()
-		self.stock = ResourceView()
-		self.market = MarketView()
 		self.map_window = MapView()
+		self.rs = ResourceView()
+		self.market = MarketView()
+		self.build_win = Gtk.Label('Build')
+		self.fire_win = Gtk.Label('Fire')
 
-		self.stock.connect('buy', buy_cb)
+		stack = Gtk.Stack()
+		stack.set_transition_type(\
+				Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
+		stack.set_transition_duration(250)
+
+		stack.add_titled(self.market,
+				'auction',
+				'Auction Power Plants')
+		stack.child_set_property(self.market,
+					'icon-name',
+					'gnome-power-manager-symbolic')
+
+		stack.add_titled(self.rs,
+				'rs',
+				'Resources')
+		stack.child_set_property(self.rs,
+					'icon-name',
+					'preferences-color-symbolic')
+
+		stack.add_titled(self.build_win,
+				'rs',
+				'Build Connections')
+		stack.child_set_property(self.build_win,
+					'icon-name',
+					'preferences-system-sharing-symbolic')
+
+		stack.add_titled(self.fire_win,
+				'rs',
+				'Fire Plants')
+		stack.child_set_property(self.fire_win,
+					'icon-name',
+					'goa-panel-symbolic')
+
+		ss = Gtk.StackSwitcher()
+		ss.set_stack(stack)
+		ss.set_halign(Gtk.Align.CENTER)
+
+		self.rs.connect('buy', buy_cb)
 		self.market.connect('bid', bid_cb)
 		self.market.connect('pass', pass_cb)
 		self.map_window.connect('build', build_cb)
@@ -73,8 +114,8 @@ class GameWindow(Gtk.Box):
 		vbox = Gtk.Box(orientation = Gtk.Orientation.VERTICAL,
 					spacing = 5)
 		vbox.pack_start(self.player_list, True, True, 0)
-		vbox.pack_start(self.stock, False, True, 0)
-		vbox.pack_start(self.market, False, True, 0)
+		vbox.pack_start(ss, False, True, 0)
+		vbox.pack_start(stack, False, True, 0)
 
 		uscr = Gtk.ScrolledWindow()
 		uscr.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.NEVER)
