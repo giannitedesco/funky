@@ -7,10 +7,10 @@ from plantlist import PlantList
 class MarketRow(Gtk.ListBoxRow):
 	def __init__(self, bid_cb, pass_cb):
 		def bid_shim(*args):
-			sel = self.plants.get_selected_items()
+			sel = self.plants.get_selected()
 			if not sel:
 				return
-			idx = sel[0][0]
+			img, txt, idx = sel
 			bid_cb(idx, self.c.get_value_as_int())
 		def pass_shim(*args):
 			pass_cb()

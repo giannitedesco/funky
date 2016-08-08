@@ -12,7 +12,7 @@ class PlantList(Gtk.IconView):
 				selectable = True):
 		super(PlantList, self).__init__()
 
-		s = Gtk.ListStore(Pixbuf, str)
+		s = Gtk.ListStore(Pixbuf, str, int)
 
 		self.set_model(s)
 		self.set_pixbuf_column(0)
@@ -29,6 +29,15 @@ class PlantList(Gtk.IconView):
 			self.set_selection_mode(Gtk.SelectionMode.NONE)
 
 		self.update(indices)
+
+	def get_selected(self):
+		sel = self.get_selected_items()
+		if not sel:
+			return None
+		path = sel[0]
+		model = self.get_model()
+		row = model[path]
+		return (row[0], row[1], row[2])
 	
 	def update(self, indices = None):
 		if not indices:
@@ -43,7 +52,7 @@ class PlantList(Gtk.IconView):
 				if i < 0:
 					i = 43
 				plant = p[i]
-				s.append((plant, 'Card %d'%i))
+				s.append((plant, 'Card %d'%i, i))
 		else:
 			for i, plant in enumerate(p):
-				s.append((plant, 'Card %d'%i))
+				s.append((plant, 'Card %d'%i, i))
