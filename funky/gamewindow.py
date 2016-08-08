@@ -16,6 +16,8 @@ class GameWindow(Gtk.Box):
 			(GObject.SIGNAL_RUN_LAST, None, ()),
 		'buy':
 			(GObject.SIGNAL_RUN_LAST, None, (int, int, int, int)),
+		'build':
+			(GObject.SIGNAL_RUN_LAST, None, (int, )),
 	}
 	def __init__(self):
 		def bid_cb(index, price):
@@ -24,6 +26,8 @@ class GameWindow(Gtk.Box):
 			self.emit('pass')
 		def buy_cb(k, o, m, ke):
 			self.emit('buy', k, o, m, ke)
+		def build_cb(city):
+			self.emit('build', city)
 		super(GameWindow, self).__init__(\
 				orientation = Gtk.Orientation.HORIZONTAL,
 				spacing = 6)
@@ -31,7 +35,7 @@ class GameWindow(Gtk.Box):
 		self.player_list = PlayerList()
 		self.stock = ResourceView(buy_cb)
 		self.market = MarketView(bid_cb, pass_cb)
-		self.map_window = MapView()
+		self.map_window = MapView(build_cb)
 
 		vbox = Gtk.Box(orientation = Gtk.Orientation.VERTICAL,
 					spacing = 5)
@@ -73,3 +77,6 @@ class GameWindow(Gtk.Box):
 			print 'uh'
 			return
 		self.stock.update_stock(*stock)
+
+	def update_cities(self, cities):
+		self.map_window.update_cities(cities)

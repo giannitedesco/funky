@@ -36,6 +36,8 @@ class FunkGame(GObject.GObject):
 			(GObject.SIGNAL_RUN_LAST, None, (int, object)),
 		'update_stock':
 			(GObject.SIGNAL_RUN_LAST, None, (object,)),
+		'update_cities':
+			(GObject.SIGNAL_RUN_LAST, None, (object,)),
 	}
 
 	def __init__(self):
@@ -61,6 +63,7 @@ class FunkGame(GObject.GObject):
 		self.map_nr = -1
 		self.stock = None
 		self.dist = None
+		self.cities = None
 
 	def tx(self, msg):
 		'Emits a message to transmit to server'
@@ -144,7 +147,7 @@ class FunkGame(GObject.GObject):
 		self.map_nr = nr
 		if (self.map_nr, self.dist) == old_dists:
 			return
-		self.emit('update_map', self.cards_left, self.dist)
+		self.emit('update_map', self.map_nr, self.dist)
 
 	def update_stock(self, stock):
 		if not stock:
@@ -154,6 +157,15 @@ class FunkGame(GObject.GObject):
 		if self.stock == old_stock:
 			return
 		self.emit('update_stock', self.stock)
+
+	def update_cities(self, cities):
+		if not cities:
+			return
+		old_cities = self.cities
+		self.cities = cities
+		if self.cities == old_cities:
+			return
+		self.emit('update_cities', self.cities)
 
 	def dispatch(self, msg):
 		def nop_cb(msg):
@@ -199,6 +211,8 @@ class FunkGame(GObject.GObject):
 			self.update_stock(msg.stock)
 
 		def city_cb(msg):
+			self.update_cities(msg.city)
+			self.update_nr_city(msg.nr_city)
 			return
 
 		disp = {

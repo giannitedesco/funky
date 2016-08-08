@@ -6,7 +6,8 @@ from os.path import join
 
 base_dir = '/home/scara/Downloads/BrettspielWelt'
 
-def load_plants(subdir):
+def load_plants():
+	subdir = 'funkenschlagPics/kw'
 	path = join(base_dir, subdir)
 	fns = (
 		'funkkart_03a.jpg', 'funkkart_04a.jpg',
@@ -45,7 +46,7 @@ class PlantPixbufs(object):
 	__map = None
 	def __new__(cls, *args, **kwargs):
 		if cls.__map is None:
-			cls.__map = load_plants('funkenschlagPics/kw')
+			cls.__map = load_plants()
 		return super(PlantPixbufs, cls).__new__(cls)
 	def __getitem__(self, k):
 		return self.__map[k]
@@ -57,3 +58,24 @@ def load_map(map_nr):
 		'frankreich.jpg', 'italien.jpg', 'bw.jpg')
 	pix = Pixbuf.new_from_file(join(path, fns[map_nr]))
 	return pix
+
+def load_houses():
+	subdir = 'funkenschlagPics'
+	path = join(base_dir, subdir)
+	fns = (
+		'blau_a.gif',
+		'violett_a.gif',
+		'gelb_a.gif',
+		'rot_a.gif',
+		'grau_a.gif',
+		'braun_a.gif',
+		'wolke.gif',
+		'wolke.png'
+	)
+
+	out = []
+	for fn in map(lambda x:join(path, x), fns):
+		pix = Pixbuf.new_from_file(fn)
+		out.append(pix)
+
+	return tuple(out)
