@@ -6,6 +6,7 @@ from plantlist import PlantList
 from playerlist import PlayerList
 from marketview import MarketView
 from resourceview import ResourceView
+from buildview import BuildView
 from mapview import MapView
 from funkgame import FunkGame
 
@@ -21,7 +22,7 @@ class GameWindow(Gtk.Box):
 			self.game.buy_rs(k, o, m, ke)
 		def build_cb(_, city):
 			self.game.build(0, city)
-		def nobuild_cb(_, city):
+		def nobuild_cb(_):
 			self.game.build(1, 0)
 
 		# Callbacks for game events
@@ -38,11 +39,11 @@ class GameWindow(Gtk.Box):
 		def market_cb(_, cards_left, market):
 			self.market.update_market(cards_left, market)
 		def map_cb(_, nr, dists):
-			self.map_window.set_map(nr, dists)
+			self.map_win.set_map(nr, dists)
 		def stock_cb(_, rs):
 			self.rs.update_stock(*rs)
 		def cities_cb(_, cities):
-			self.map_window.update_cities(cities)
+			self.map_win.update_cities(cities)
 
 		super(GameWindow, self).__init__(\
 				orientation = Gtk.Orientation.HORIZONTAL,
@@ -62,10 +63,10 @@ class GameWindow(Gtk.Box):
 
 		# Child windows
 		self.player_list = PlayerList()
-		self.map_window = MapView()
+		self.map_win = MapView()
 		self.rs = ResourceView()
 		self.market = MarketView()
-		self.build_win = Gtk.Label('Build')
+		self.build_win = BuildView()
 		self.fire_win = Gtk.Label('Fire')
 
 		stack = Gtk.Stack()
@@ -88,14 +89,14 @@ class GameWindow(Gtk.Box):
 					'preferences-color-symbolic')
 
 		stack.add_titled(self.build_win,
-				'rs',
+				'build',
 				'Build Connections')
 		stack.child_set_property(self.build_win,
 					'icon-name',
 					'preferences-system-sharing-symbolic')
 
 		stack.add_titled(self.fire_win,
-				'rs',
+				'fire',
 				'Fire Plants')
 		stack.child_set_property(self.fire_win,
 					'icon-name',
@@ -108,8 +109,8 @@ class GameWindow(Gtk.Box):
 		self.rs.connect('buy', buy_cb)
 		self.market.connect('bid', bid_cb)
 		self.market.connect('pass', pass_cb)
-		self.map_window.connect('build', build_cb)
-		#self.map_window.connect('finish-building', nobuild_cb)
+		self.map_win.connect('build', build_cb)
+		self.build_win.connect('finished-building', nobuild_cb)
 
 		vbox = Gtk.Box(orientation = Gtk.Orientation.VERTICAL,
 					spacing = 5)
@@ -123,7 +124,7 @@ class GameWindow(Gtk.Box):
 
 		pscr = Gtk.ScrolledWindow()
 		pscr.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-		pscr.add(self.map_window)
+		pscr.add(self.map_win)
 
 		self.pack_start(uscr, False, True, 0)
 		self.pack_start(pscr, True, True, 0)
