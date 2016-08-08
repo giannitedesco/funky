@@ -40,7 +40,7 @@ class GameWindow(Gtk.Box):
 		vbox = Gtk.Box(orientation = Gtk.Orientation.VERTICAL,
 					spacing = 5)
 		vbox.pack_start(self.player_list, True, True, 0)
-		vbox.pack_start(self.stock, True, True, 0)
+		vbox.pack_start(self.stock, False, True, 0)
 		vbox.pack_start(self.market, False, True, 0)
 
 		uscr = Gtk.ScrolledWindow()

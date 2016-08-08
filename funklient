@@ -79,14 +79,23 @@ class FunkWindow(Gtk.Window):
 			self.server_win.rx_msg(msg)
 
 		def ps_cb(_, p, s):
-			if (p, s) == (0, 0):
-				return
-			pstr = ('auction',
+			pstr = (None,
+				'auction',
 				'buy resources',
 				'build cities',
-				'fire plants')
-			p = pstr[s]
+				'fire plants',
+				None,
+				None,
+				None,
+				None,
+				None,
+				'Demolish plants',
+				'Dispose of raw materials')
+			p = pstr[p]
 			hb = self.get_titlebar()
+			if p is None:
+				hb.props.title = 'FunKlient'
+				return
 			hb.props.title = 'FunKlient: [stufe-%d %s]'%(s + 1, p)
 		def money_cb(_, money):
 			self.game_win.update_player_money(money)

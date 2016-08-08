@@ -207,10 +207,14 @@ class FunkGame(GObject.GObject):
 			self.update_market(msg.cards_left, msg.market)
 
 		def materials_cb(msg):
+			self.update_ps(msg.phase, self.stufe)
 			self.update_money(msg.money)
 			self.update_stock(msg.stock)
 
 		def city_cb(msg):
+			phase = msg.phase_stufe & 0x3ff
+			stufe = msg.phase_stufe >> 10
+			self.update_ps(phase, stufe)
 			self.update_cities(msg.city)
 			self.update_nr_city(msg.nr_city)
 			return
