@@ -242,6 +242,8 @@ class FunkGame(GObject.GObject):
 			players = tuple(map(lambda x:getattr(msg, x), an))
 			self.update_players(int(msg.nr_players), players)
 
+			self.update_money(msg.money)
+
 			self.i_am = msg.i_am_id
 			self.update_current_player(msg.current_player)
 
@@ -275,6 +277,7 @@ class FunkGame(GObject.GObject):
 			self.update_cities(msg.city)
 			self.update_city_active(msg.city_active)
 			self.update_nr_city(msg.nr_city)
+			self.update_money(msg.money)
 			self.update_current_player(msg.current_player)
 
 		disp = {
