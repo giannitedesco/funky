@@ -58,5 +58,8 @@ class PlantList(Gtk.IconView):
 				s.append((plant, None, i))
 
 	def update_stock(self, idx, stock, cap):
+		# for hybrid plants
+		stock = (stock >> 10) + (stock & 0x3ff)
 		s = self.get_model()
-		s.set_value(s.get_iter((idx,)), 1, '%d/%d'%(stock, cap))
+		text = '%d/%d'%(stock, cap)
+		s.set_value(s.get_iter((idx,)), 1, text)
