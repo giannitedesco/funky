@@ -6,7 +6,7 @@ from plantlist import PlantList
 
 from collections import namedtuple
 
-Player = namedtuple('Player', ('name', 'money', 'cities', 'plants'))
+Player = namedtuple('Player', ('name', 'money', 'cap', 'cities', 'plants'))
 
 class PlayerRow(Gtk.ListBoxRow):
 	def __init__(self, u, prev = None):
@@ -41,7 +41,7 @@ class PlayerRow(Gtk.ListBoxRow):
 
 	def update(self, u):
 		self.update_name(u.name)
-		self.update_cities(u.cities)
+		self.update_cities(u.cities, u.cap)
 		self.update_money(u.money)
 		self.update_plants(u.plants)
 
@@ -49,8 +49,8 @@ class PlayerRow(Gtk.ListBoxRow):
 		self.name.set_markup('<b>%s</b>'%name)
 	def update_money(self, money):
 		self.money.set_markup('<b>%d elektro</b>'%money)
-	def update_cities(self, cities):
-		self.cities.set_markup('<b>%d cities</b>'%cities)
+	def update_cities(self, cities, cap):
+		self.cities.set_markup('<b>%d/%d cities</b>'%(cap, cities))
 	def update_plants(self, plants):
 		self.plants.update(plants)
 	def update_stock(self, stock):
@@ -88,7 +88,7 @@ class PlayerList(Gtk.ListBox):
 				n = '**'
 			r = self.get_row_at_index(i)
 			if r is None:
-				u = Player(n, 50, 0, (-1, -1, -1, -1))
+				u = Player(n, 50, 0, 0, (-1, -1, -1, -1))
 				r = PlayerRow(u, prev = self.prev)
 				self.prev = r.rb
 				self.insert(r, i)
@@ -119,12 +119,12 @@ class PlayerList(Gtk.ListBox):
 		self.show_all()
 
 	def update_player_cities(self, cities):
-		for (i, (_, c)) in enumerate(cities):
+		for (i, (n, c)) in enumerate(cities):
 			r = self.get_row_at_index(i)
 			if r is None:
-				if (_, c) == (0, 0):
+				if (n, c) == (0, 0):
 					continue
 				raise Exception
 			else:
-				r.update_cities(c)
+				r.update_cities(n, c)
 		self.show_all()
