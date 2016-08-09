@@ -70,3 +70,9 @@ class FireView(Gtk.Box):
 		self.pack_start(hbox, True, True, 5)
 		self.pack_start(done, False, True, 5)
 
+	def update_stock(self, stock):
+		for i, s in enumerate(stock):
+			self.p[i].p.update_stock(0, *s)
+	def update_plants(self, plants):
+		for i, p in enumerate(plants):
+			self.p[i].p.update_plant(0, p)

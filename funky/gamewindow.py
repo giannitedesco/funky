@@ -51,7 +51,9 @@ class GameWindow(Gtk.Box):
 			self.player_list.update_player_names(nr, names)
 		def plants_cb(_, plants):
 			self.player_list.update_player_plants(plants)
-			# TODO: reflect in fire_win, too
+			if self.game.i_am < 0:
+				return
+			self.fire_win.update_plants(plants[self.game.i_am])
 		def nr_city_cb(_, nr_city):
 			self.player_list.update_player_cities(nr_city)
 		def market_cb(_, cards_left, market):
@@ -64,7 +66,9 @@ class GameWindow(Gtk.Box):
 			self.map_win.update_cities(cities)
 		def plant_stock_cb(_, prs):
 			self.player_list.update_plant_stock(prs)
-			# TODO: reflect in fire_win, too
+			if self.game.i_am < 0:
+				return
+			self.fire_win.update_stock(prs[self.game.i_am])
 		def current_player_cb(_, cp, iam):
 			self.player_list.update_current_player(cp)
 

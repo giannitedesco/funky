@@ -57,6 +57,11 @@ class PlantList(Gtk.IconView):
 			for i, plant in enumerate(p):
 				s.append((plant, None, i))
 
+	def update_plant(self, idx, plant):
+		s = self.get_model()
+		p = PlantPixbufs()[plant]
+		s.set_value(s.get_iter((idx,)), 0, p)
+
 	def update_stock(self, idx, stock, cap):
 		# for hybrid plants
 		stock = (stock >> 10) + (stock & 0x3ff)
