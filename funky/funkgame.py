@@ -42,6 +42,8 @@ class FunkGame(GObject.GObject):
 			(GObject.SIGNAL_RUN_LAST, None, (object, )),
 		'update_current_player':
 			(GObject.SIGNAL_RUN_LAST, None, (int, int)),
+		'update_city_active':
+			(GObject.SIGNAL_RUN_LAST, None, (object, )),
 	}
 
 	def __init__(self):
@@ -69,6 +71,7 @@ class FunkGame(GObject.GObject):
 		self.dist = None
 		self.cities = None
 		self.plant_stock = None
+		self.city_active = None
 		self.current_player = -1
 		self.i_am = -1
 
@@ -192,6 +195,15 @@ class FunkGame(GObject.GObject):
 				self.current_player,
 				self.i_am)
 
+	def update_city_active(self, city_active):
+		if not city_active:
+			return
+		old_city_active = self.city_active
+		self.city_active = city_active
+		if self.city_active == old_city_active:
+			return
+		self.emit('update_city_active', self.city_active)
+
 	def dispatch(self, msg):
 		def nop_cb(msg):
 			return
@@ -247,6 +259,7 @@ class FunkGame(GObject.GObject):
 			stufe = msg.phase_stufe >> 10
 			self.update_ps(phase, stufe)
 			self.update_cities(msg.city)
+			self.update_city_active(msg.city_active)
 			self.update_nr_city(msg.nr_city)
 			self.update_current_player(msg.current_player)
 

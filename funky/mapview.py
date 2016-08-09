@@ -89,6 +89,15 @@ def draw(self, cr):
 	for ce in self.cities:
 		h, idx = (ce[:3], ce[3])
 		x,y = self.cxy[idx]
+		if idx in self.clouds:
+			t = self.houses[7]
+			cr.save()
+			cr.translate(x - 38, y - 30)
+			cr.set_source_surface(t)
+			cr.rectangle(0, 0, t.get_width(), t.get_height())
+			cr.fill()
+			cr.restore()
+			continue
 		for i, o in enumerate(h):
 			if o < 0 or o >= 6:
 				break
@@ -152,4 +161,10 @@ class MapView(Gtk.DrawingArea):
 
 	def update_cities(self, cities):
 		self.cities = cities
+		self.queue_draw()
+
+	def update_city_active(self, city_active):
+		g = (i for (i,x) in
+			filter(lambda (i,x):not x, enumerate(city_active)))
+		self.clouds = frozenset(g)
 		self.queue_draw()
