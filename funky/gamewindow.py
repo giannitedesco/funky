@@ -8,6 +8,7 @@ from marketview import MarketView
 from resourceview import ResourceView
 from buildview import BuildView
 from mapview import MapView
+from fireview import FireView
 from funkgame import FunkGame
 
 class GameWindow(Gtk.Box):
@@ -24,6 +25,10 @@ class GameWindow(Gtk.Box):
 			self.game.build(0, city)
 		def nobuild_cb(_):
 			self.game.build(1, 0)
+		def fire_cb(_, a, b, c, d):
+			self.game.fire(a, b, c, d)
+		def demolish_cb(_, plant_idx):
+			self.game.demolish(plant_idx)
 
 		# Callbacks for game events
 		def ps_cb(_, p, s):
@@ -46,6 +51,7 @@ class GameWindow(Gtk.Box):
 			self.player_list.update_player_names(nr, names)
 		def plants_cb(_, plants):
 			self.player_list.update_player_plants(plants)
+			# TODO: reflect in fire_win, too
 		def nr_city_cb(_, nr_city):
 			self.player_list.update_player_cities(nr_city)
 		def market_cb(_, cards_left, market):
@@ -56,6 +62,9 @@ class GameWindow(Gtk.Box):
 			self.rs.update_stock(*rs)
 		def cities_cb(_, cities):
 			self.map_win.update_cities(cities)
+		def plant_stock_cb(_, prs):
+			self.player_list.update_plant_stock(prs)
+			# TODO: reflect in fire_win, too
 
 		super(GameWindow, self).__init__(\
 				orientation = Gtk.Orientation.HORIZONTAL,
@@ -72,6 +81,7 @@ class GameWindow(Gtk.Box):
 		self.game.connect('update_map', map_cb)
 		self.game.connect('update_stock', stock_cb)
 		self.game.connect('update_cities', cities_cb)
+		self.game.connect('update_plant_stock', plant_stock_cb)
 
 		# Child windows
 		self.player_list = PlayerList()
@@ -79,7 +89,7 @@ class GameWindow(Gtk.Box):
 		self.rs = ResourceView()
 		self.market = MarketView()
 		self.build_win = BuildView()
-		self.fire_win = Gtk.Label('Fire')
+		self.fire_win = FireView()
 
 		self.stack = stack = Gtk.Stack()
 		stack.set_transition_type(\
@@ -123,6 +133,8 @@ class GameWindow(Gtk.Box):
 		self.market.connect('pass', pass_cb)
 		self.map_win.connect('build', build_cb)
 		self.build_win.connect('finished-building', nobuild_cb)
+		self.fire_win.connect('fire', fire_cb)
+		self.fire_win.connect('demolish', demolish_cb)
 
 		vbox = Gtk.Box(orientation = Gtk.Orientation.VERTICAL,
 					spacing = 5)

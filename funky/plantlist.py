@@ -52,7 +52,11 @@ class PlantList(Gtk.IconView):
 				if i < 0:
 					i = 43
 				plant = p[i]
-				s.append((plant, 'Card %d'%i, i))
+				s.append((plant, None, i))
 		else:
 			for i, plant in enumerate(p):
-				s.append((plant, 'Card %d'%i, i))
+				s.append((plant, None, i))
+
+	def update_stock(self, idx, stock, cap):
+		s = self.get_model()
+		s.set_value(s.get_iter((idx,)), 1, '%d/%d'%(stock, cap))

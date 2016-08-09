@@ -30,7 +30,7 @@ class PlayerRow(Gtk.ListBoxRow):
 		hbox.pack_start(self.money, False, True, 5)
 		vbox.pack_start(hbox, True, True, 5)
 
-		self.plants = PlantList(selectable = False)
+		self.plants = PlantList(selectable = False, show_text = True)
 		vbox.pack_start(self.plants, True, True, 0)
 
 		self.update(u)
@@ -49,6 +49,9 @@ class PlayerRow(Gtk.ListBoxRow):
 		self.cities.set_markup('<b>%d cities</b>'%cities)
 	def update_plants(self, plants):
 		self.plants.update(plants)
+	def update_stock(self, stock):
+		for i, s in enumerate(stock):
+			self.plants.update_stock(i, *s)
 
 class PlayerList(Gtk.ListBox):
 	def __init__(self):
@@ -56,6 +59,15 @@ class PlayerList(Gtk.ListBox):
 		self.set_can_focus(False)
 		#self.set_sensitive(False)
 		self.set_selection_mode(Gtk.SelectionMode.NONE)
+
+	def update_plant_stock(self, prs):
+		for i, pr in enumerate(prs):
+			if not pr or pr == (-1, -1, -1, -1):
+				continue
+			r = self.get_row_at_index(i)
+			if r is None:
+				continue
+			r.update_stock(pr)
 
 	def update_player_names(self, nr, names):
 		for i, n in enumerate(names[:nr]):

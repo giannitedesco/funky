@@ -38,6 +38,8 @@ class FunkGame(GObject.GObject):
 			(GObject.SIGNAL_RUN_LAST, None, (object,)),
 		'update_cities':
 			(GObject.SIGNAL_RUN_LAST, None, (object,)),
+		'update_plant_stock':
+			(GObject.SIGNAL_RUN_LAST, None, (object, )),
 	}
 
 	def __init__(self):
@@ -64,6 +66,7 @@ class FunkGame(GObject.GObject):
 		self.stock = None
 		self.dist = None
 		self.cities = None
+		self.plant_stock = None
 
 	def tx(self, msg):
 		'Emits a message to transmit to server'
@@ -100,6 +103,15 @@ class FunkGame(GObject.GObject):
 		if self.money == old_money:
 			return
 		self.emit('update_money', self.money)
+
+	def update_plant_stock(self, plant_stock):
+		if not plant_stock:
+			return
+		old_plant_stock = self.plant_stock
+		self.plant_stock = plant_stock
+		if self.plant_stock == old_plant_stock:
+			return
+		self.emit('update_plant_stock', self.plant_stock)
 
 	def update_players(self, nr, players):
 		if not players:
@@ -210,6 +222,7 @@ class FunkGame(GObject.GObject):
 			self.update_ps(msg.phase, self.stufe)
 			self.update_money(msg.money)
 			self.update_stock(msg.stock)
+			self.update_plant_stock(msg.materials)
 
 		def city_cb(msg):
 			phase = msg.phase_stufe & 0x3ff
