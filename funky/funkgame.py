@@ -290,7 +290,7 @@ class FunkGame(GObject.GObject):
 			self.fire(int(a), int(b), int(c), int(d))
 
 		def demolish_cb(cmd, args):
-			self.demolish(0, int(args))
+			self.demolish(int(args))
 
 		def rsmove_cb(cmd, args):
 			frm, to, rs = args.split(None, 2)
@@ -323,7 +323,7 @@ class FunkGame(GObject.GObject):
 			cb(cmd, args)
 
 	def demolish(self, plant):
-		self.action(0, plant, 0, 0, 0)
+		self.action(1, plant, 0, 0, 0)
 
 	def fire(self, a, b, c, d):
 		self.action(0, a, b, c, d)
