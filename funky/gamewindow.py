@@ -65,6 +65,8 @@ class GameWindow(Gtk.Box):
 		def plant_stock_cb(_, prs):
 			self.player_list.update_plant_stock(prs)
 			# TODO: reflect in fire_win, too
+		def current_player_cb(_, cp, iam):
+			self.player_list.update_current_player(cp)
 
 		super(GameWindow, self).__init__(\
 				orientation = Gtk.Orientation.HORIZONTAL,
@@ -82,6 +84,7 @@ class GameWindow(Gtk.Box):
 		self.game.connect('update_stock', stock_cb)
 		self.game.connect('update_cities', cities_cb)
 		self.game.connect('update_plant_stock', plant_stock_cb)
+		self.game.connect('update_current_player', current_player_cb)
 
 		# Child windows
 		self.player_list = PlayerList()

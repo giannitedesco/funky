@@ -9,7 +9,7 @@ from collections import namedtuple
 Player = namedtuple('Player', ('name', 'money', 'cities', 'plants'))
 
 class PlayerRow(Gtk.ListBoxRow):
-	def __init__(self, u):
+	def __init__(self, u, prev = None):
 		super(PlayerRow, self).__init__()
 
 		vbox = Gtk.Box(orientation = Gtk.Orientation.VERTICAL,
@@ -19,12 +19,16 @@ class PlayerRow(Gtk.ListBoxRow):
 		hbox = Gtk.Box(orientation = Gtk.Orientation.HORIZONTAL,
 					spacing = 20)
 
+		self.rb = Gtk.RadioButton.new_from_widget(prev)
+		self.rb.set_sensitive(False)
+
 		self.name = Gtk.Label(xalign = 0)
 
 		self.money = Gtk.Label()
 
 		self.cities = Gtk.Label()
 
+		hbox.pack_start(self.rb, False, False, 5)
 		hbox.pack_start(self.name, True, True, 5)
 		hbox.pack_start(self.cities, False, True, 5)
 		hbox.pack_start(self.money, False, True, 5)
@@ -34,7 +38,7 @@ class PlayerRow(Gtk.ListBoxRow):
 		vbox.pack_start(self.plants, True, True, 0)
 
 		self.update(u)
-	
+
 	def update(self, u):
 		self.update_name(u.name)
 		self.update_cities(u.cities)
@@ -59,6 +63,15 @@ class PlayerList(Gtk.ListBox):
 		self.set_can_focus(False)
 		#self.set_sensitive(False)
 		self.set_selection_mode(Gtk.SelectionMode.NONE)
+		self.null = Gtk.RadioButton()
+		self.prev = self.null
+
+	def update_current_player(self, idx):
+		r = self.get_row_at_index(idx)
+		if r is None:
+			self.null.set_active(True)
+		else:
+			r.rb.set_active(True)
 
 	def update_plant_stock(self, prs):
 		for i, pr in enumerate(prs):
@@ -76,8 +89,9 @@ class PlayerList(Gtk.ListBox):
 			r = self.get_row_at_index(i)
 			if r is None:
 				u = Player(n, 50, 0, (-1, -1, -1, -1))
-				r = PlayerRow(u)
-				self.insert(PlayerRow(u), i)
+				r = PlayerRow(u, prev = self.prev)
+				self.prev = r.rb
+				self.insert(r, i)
 			else:
 				r.update_name(n)
 		self.show_all()
@@ -88,9 +102,7 @@ class PlayerList(Gtk.ListBox):
 			if r is None:
 				if p == (-1, -1, -1, -1):
 					continue
-				u = Player('**', 50, 0, p)
-				r = PlayerRow(u)
-				self.insert(PlayerRow(u), i)
+				raise Exception
 			else:
 				r.update_plants(p)
 		self.show_all()
@@ -101,9 +113,7 @@ class PlayerList(Gtk.ListBox):
 			if r is None:
 				if m == 50:
 					continue
-				u = Player('**', m, 0, (-1, -1, -1, -1))
-				r = PlayerRow(u)
-				self.insert(PlayerRow(u), i)
+				raise Exception
 			else:
 				r.update_money(m)
 		self.show_all()
@@ -114,9 +124,7 @@ class PlayerList(Gtk.ListBox):
 			if r is None:
 				if (_, c) == (0, 0):
 					continue
-				u = Player('**', 50, c, (-1, -1, -1, -1))
-				r = PlayerRow(u)
-				self.insert(PlayerRow(u), i)
+				raise Exception
 			else:
 				r.update_cities(c)
 		self.show_all()

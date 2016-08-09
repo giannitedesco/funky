@@ -40,6 +40,8 @@ class FunkGame(GObject.GObject):
 			(GObject.SIGNAL_RUN_LAST, None, (object,)),
 		'update_plant_stock':
 			(GObject.SIGNAL_RUN_LAST, None, (object, )),
+		'update_current_player':
+			(GObject.SIGNAL_RUN_LAST, None, (int, int)),
 	}
 
 	def __init__(self):
@@ -67,6 +69,8 @@ class FunkGame(GObject.GObject):
 		self.dist = None
 		self.cities = None
 		self.plant_stock = None
+		self.current_player = -1
+		self.i_am = -1
 
 	def tx(self, msg):
 		'Emits a message to transmit to server'
@@ -179,6 +183,15 @@ class FunkGame(GObject.GObject):
 			return
 		self.emit('update_cities', self.cities)
 
+	def update_current_player(self, current_player):
+		old_cp = self.current_player
+		self.current_player = current_player
+		if self.current_player == old_cp:
+			return
+		self.emit('update_current_player',
+				self.current_player,
+				self.i_am)
+
 	def dispatch(self, msg):
 		def nop_cb(msg):
 			return
@@ -196,14 +209,17 @@ class FunkGame(GObject.GObject):
 			self.round = msg.round
 			self.update_ps(msg.phase, msg.stufe)
 
-			an = ('player%d'%x for x in xrange(1, 7))
-			players = tuple(map(lambda x:getattr(msg, x), an))
-			self.update_players(int(msg.nr_players), players)
-
 			if msg.sequence:
 				self.sequence = msg.sequence
 
 			self.i_am_id = int(msg.i_am_id)
+
+			an = ('player%d'%x for x in xrange(1, 7))
+			players = tuple(map(lambda x:getattr(msg, x), an))
+			self.update_players(int(msg.nr_players), players)
+
+			self.i_am = msg.i_am_id
+			self.update_current_player(msg.current_player)
 
 		def score_cb(msg):
 			self.update_plants(msg.plants)
@@ -217,12 +233,14 @@ class FunkGame(GObject.GObject):
 			self.update_money(msg.money)
 
 			self.update_market(msg.cards_left, msg.market)
+			self.update_current_player(msg.current_player)
 
 		def materials_cb(msg):
 			self.update_ps(msg.phase, self.stufe)
 			self.update_money(msg.money)
 			self.update_stock(msg.stock)
 			self.update_plant_stock(msg.materials)
+			self.update_current_player(msg.current_player)
 
 		def city_cb(msg):
 			phase = msg.phase_stufe & 0x3ff
@@ -230,7 +248,7 @@ class FunkGame(GObject.GObject):
 			self.update_ps(phase, stufe)
 			self.update_cities(msg.city)
 			self.update_nr_city(msg.nr_city)
-			return
+			self.update_current_player(msg.current_player)
 
 		disp = {
 			server.PingServerMsg: ping_cb,

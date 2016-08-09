@@ -88,18 +88,18 @@ class FunkenPlayerServerMsg(Message):
 class FunkenAuctionServerMsg(Message):
 	_fields = ('target', 'cards_left', 'market', 'provider',
 			'in_play', 'bid', 'act_provider', 'new',
-			'old', 'money', 'phase_stufe')
+			'old', 'money', 'phase_stufe', 'current_player')
 	_defaults = ('', -1, tuple(), tuple(),
 			tuple(), tuple(), -1, -1,
-			-1, -1, -1)
+			-1, -1, -1, -1)
 	_types = (TStr,TInt,TIntVector,TIntVector,
 			TIntVector, TIntArray, TInt, TInt,
-			TInt, TIntArray, TInt)
+			TInt, TIntArray, TInt, TInt)
 	_msgtype = 202
 
 class FunkenCityServerMsg(Message):
 	_fields = ('target', 'city', 'city_active', 'nr_city',
-			'money', 'build_cost', 'phase_stufe', 'currentPlayer')
+			'money', 'build_cost', 'phase_stufe', 'current_player')
 	_defaults = ('', tuple(), tuple(), tuple(),
 			tuple(), tuple(), -1, -1)
 	_types = (TStr,TInt2Array,TBoolArray,TInt2Array,
@@ -109,13 +109,13 @@ class FunkenCityServerMsg(Message):
 class FunkenMaterialsServerMsg(Message):
 	_fields = ('target', 'stock', 'fires', 'materials',
 			'money', 'newRs', 'revenue', 'phase',
-			'currentPlayer')
+			'current_player')
 	_defaults = ('', tuple(), tuple(), tuple(),
 			tuple(), tuple(), tuple(), -1,
 			-1)
 	_types = (TStr,TIntArray,TIntArray,TInt3Array,
 			TIntArray, TIntArray, TIntArray, TInt,
-			TInt,)
+			TInt)
 	_msgtype = 204
 
 class FunkenScoreServerMsg(Message):
