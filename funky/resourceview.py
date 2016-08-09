@@ -78,7 +78,7 @@ class ResourceView(Gtk.ListBox):
 	}
 	def __init__(self):
 		def buy_cb(k, o, m, ke):
-			self.emit('buy', k, o, m, e)
+			self.emit('buy', k, o, m, ke)
 		def cb(*_):
 			self.buttons.update_totals(*map(int, (self.coal,
 								self.oil,
