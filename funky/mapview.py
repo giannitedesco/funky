@@ -152,3 +152,4 @@ class MapView(Gtk.DrawingArea):
 
 	def update_cities(self, cities):
 		self.cities = cities
+		self.queue_draw()
