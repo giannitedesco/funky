@@ -44,6 +44,8 @@ class FunkGame(GObject.GObject):
 			(GObject.SIGNAL_RUN_LAST, None, (int, int)),
 		'update_city_active':
 			(GObject.SIGNAL_RUN_LAST, None, (object, )),
+		'update_bid':
+			(GObject.SIGNAL_RUN_LAST, None, (int, int, int)),
 	}
 
 	def __init__(self):
@@ -64,7 +66,8 @@ class FunkGame(GObject.GObject):
 				(-1, -1, -1, -1),
 				(-1, -1, -1, -1))
 		self.nr_city = ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0))
-		self.market = ()
+		self.market = (43, 43, 43, 43, 43, 43, 43, 43)
+		self.bid = (-1, 0, -1)
 		self.cards_left = 0
 		self.map_nr = -1
 		self.stock = None
@@ -204,6 +207,15 @@ class FunkGame(GObject.GObject):
 			return
 		self.emit('update_city_active', self.city_active)
 
+	def update_bid(self, bid):
+		if not bid:
+			return
+		old_bid = self.bid
+		self.bid = bid
+		if self.bid == old_bid:
+			return
+		self.emit('update_bid', *self.bid)
+
 	def dispatch(self, msg):
 		def nop_cb(msg):
 			return
@@ -244,8 +256,10 @@ class FunkGame(GObject.GObject):
 
 			self.update_money(msg.money)
 
-			self.update_market(msg.cards_left, msg.market)
 			self.update_current_player(msg.current_player)
+
+			self.update_market(msg.cards_left, msg.market)
+			self.update_bid(msg.bid)
 
 		def materials_cb(msg):
 			self.update_ps(msg.phase, self.stufe)

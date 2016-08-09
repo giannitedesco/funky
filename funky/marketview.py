@@ -4,34 +4,39 @@ from gi.repository import Gtk, GObject
 
 from plantlist import PlantList
 
-class MarketRow(Gtk.ListBoxRow):
-	def __init__(self, bid_cb, pass_cb):
-		def bid_shim(*args):
+class MarketView(Gtk.Box):
+	__gsignals__ = {
+		'bid':
+			(GObject.SIGNAL_RUN_LAST, None, (int, int)),
+		'pass':
+			(GObject.SIGNAL_RUN_LAST, None, ()),
+	}
+	def __init__(self):
+		def bid_cb(idx, price):
 			sel = self.plants.get_selected()
 			if not sel:
 				return
 			img, txt, idx = sel
-			bid_cb(idx, self.c.get_value_as_int())
-		def pass_shim(*args):
-			pass_cb()
-		super(MarketRow, self).__init__()
-
-		vbox = Gtk.Box(orientation = Gtk.Orientation.VERTICAL,
-					spacing = 5)
-		self.add(vbox)
+			price = self.c.get_value_as_int()
+			self.emit('bid', idx, price)
+		def pass_cb():
+			self.emit('pass')
+		super(MarketView, self).__init__(\
+				orientation = Gtk.Orientation.VERTICAL,
+				spacing = 5)
 
 		hbox = Gtk.Box(orientation = Gtk.Orientation.HORIZONTAL,
 					spacing = 20)
 
-		name = Gtk.Label(xalign = 0)
-		name.set_markup('<b>Power Plant Auction</b>')
+		self.title = Gtk.Label(xalign = 0)
+		self.title.set_markup('<b>Power Plant Auction</b>')
 
-		hbox.pack_start(name, True, True, 5)
-		vbox.pack_start(hbox, True, True, 5)
+		hbox.pack_start(self.title, True, True, 5)
+		self.pack_start(hbox, True, True, 5)
 
 		self.plants = PlantList(indices = (-1 for x in xrange(8)))
 		self.plants.set_columns(4)
-		vbox.pack_start(self.plants, True, True, 5)
+		self.pack_start(self.plants, True, True, 5)
 
 		hbox = Gtk.Box(orientation = Gtk.Orientation.HORIZONTAL,
 					spacing = 20)
@@ -46,34 +51,19 @@ class MarketRow(Gtk.ListBoxRow):
 		hbox.pack_start(b, True, True, 5)
 		hbox.pack_start(p, True, True, 5)
 
-		self.c.connect('activate', bid_shim)
-		b.connect('clicked', bid_shim)
-		p.connect('clicked', pass_shim)
+		self.c.connect('activate', bid_cb)
+		b.connect('clicked', bid_cb)
+		p.connect('clicked', pass_cb)
 
-		vbox.pack_start(hbox, False, True, 5)
-		self.set_can_focus(False)
-
-	def update_plants(self, plants):
-		self.plants.update(plants)
-
-class MarketView(Gtk.ListBox):
-	__gsignals__ = {
-		'bid':
-			(GObject.SIGNAL_RUN_LAST, None, (int, int)),
-		'pass':
-			(GObject.SIGNAL_RUN_LAST, None, ()),
-	}
-	def __init__(self):
-		def bid_cb(idx, price):
-			self.emit('bid', idx, price)
-		def pass_cb():
-			self.emit('pass')
-		super(MarketView, self).__init__()
-		self.set_can_focus(False)
-		self.set_selection_mode(Gtk.SelectionMode.NONE)
-
-		self.market = MarketRow(bid_cb, pass_cb)
-		self.insert(self.market, -1)
+		self.pack_start(hbox, False, True, 5)
 
 	def update_market(self, cards_left, market):
-		self.market.plants.update(market)
+		t = '<b>Power Plant Auction: %u plants left</b>'%cards_left
+		self.title.set_markup(t)
+		self.plants.update(market)
+
+	def update_bid(self, plant, bid, player):
+		if plant < 0 or player is None:
+			# clear bid
+			return
+		print plant, bid, player

@@ -58,6 +58,12 @@ class GameWindow(Gtk.Box):
 			self.player_list.update_player_cities(nr_city)
 		def market_cb(_, cards_left, market):
 			self.market.update_market(cards_left, market)
+		def bid_cb(_, card, bid, player):
+			if player < 0:
+				p = None
+			else:
+				p = self.game.players[player]
+			self.market.update_bid(card, bid, p)
 		def map_cb(_, nr, dists):
 			self.map_win.set_map(nr, dists)
 		def stock_cb(_, rs):
@@ -86,6 +92,7 @@ class GameWindow(Gtk.Box):
 		self.game.connect('update_plants', plants_cb)
 		self.game.connect('update_nr_city', nr_city_cb)
 		self.game.connect('update_market', market_cb)
+		self.game.connect('update_bid', bid_cb)
 		self.game.connect('update_map', map_cb)
 		self.game.connect('update_stock', stock_cb)
 		self.game.connect('update_cities', cities_cb)
