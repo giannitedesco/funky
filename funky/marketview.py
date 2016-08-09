@@ -52,7 +52,7 @@ class MarketView(Gtk.Box):
 
 		hbox = Gtk.Box(orientation = Gtk.Orientation.HORIZONTAL,
 					spacing = 20)
-		self.cur = PlantList(indices = [-1])
+		self.cur = PlantList(indices = [-1], selectable = False)
 		hbox.pack_start(self.cur, False, True, 5)
 
 		vbox = Gtk.Box(orientation = Gtk.Orientation.VERTICAL,
