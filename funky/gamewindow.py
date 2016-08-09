@@ -27,7 +27,19 @@ class GameWindow(Gtk.Box):
 
 		# Callbacks for game events
 		def ps_cb(_, p, s):
-			return
+			n = ('auction',
+				'auction',
+				'rs',
+				'build',
+				'fire',
+				None,
+				None,
+				None,
+				None,
+				None,
+				'fire',
+				None)
+			self.stack.set_visible_child_name(n[p])
 		def money_cb(_, money):
 			self.player_list.update_player_money(money)
 		def players_cb(_, nr, names):
@@ -69,7 +81,7 @@ class GameWindow(Gtk.Box):
 		self.build_win = BuildView()
 		self.fire_win = Gtk.Label('Fire')
 
-		stack = Gtk.Stack()
+		self.stack = stack = Gtk.Stack()
 		stack.set_transition_type(\
 				Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
 		stack.set_transition_duration(250)
