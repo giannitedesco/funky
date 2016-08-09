@@ -90,7 +90,7 @@ def draw(self, cr):
 		h, idx = (ce[:3], ce[3])
 		x,y = self.cxy[idx]
 		for i, o in enumerate(h):
-			if o < 0:
+			if o < 0 or o >= 6:
 				break
 
 			t = self.houses[o]
