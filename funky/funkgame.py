@@ -66,8 +66,8 @@ class FunkGame(GObject.GObject):
 				(-1, -1, -1, -1),
 				(-1, -1, -1, -1))
 		self.nr_city = ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0))
-		self.market = (43, 43, 43, 43, 43, 43, 43, 43)
-		self.bid = (-1, 0, -1)
+		self.market = (-1, -1, -1, -1, -1, -1, -1, -1)
+		self.cur_bid = (-1, 0, -1)
 		self.cards_left = 0
 		self.map_nr = -1
 		self.stock = None
@@ -207,14 +207,14 @@ class FunkGame(GObject.GObject):
 			return
 		self.emit('update_city_active', self.city_active)
 
-	def update_bid(self, bid):
-		if not bid:
+	def update_bid(self, cur_bid):
+		if not cur_bid:
 			return
-		old_bid = self.bid
-		self.bid = bid
-		if self.bid == old_bid:
+		old_bid = self.cur_bid
+		self.cur_bid = cur_bid
+		if self.cur_bid == old_bid:
 			return
-		self.emit('update_bid', *self.bid)
+		self.emit('update_bid', *self.cur_bid)
 
 	def dispatch(self, msg):
 		def nop_cb(msg):

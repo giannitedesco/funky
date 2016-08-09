@@ -58,6 +58,8 @@ class PlantList(Gtk.IconView):
 				s.append((plant, None, i))
 
 	def update_plant(self, idx, plant):
+		if plant < 0:
+			plant = 43
 		s = self.get_model()
 		p = PlantPixbufs()[plant]
 		s.set_value(s.get_iter((idx,)), 0, p)
