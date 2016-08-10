@@ -3,6 +3,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GObject
 
 from plantlist import PlantList
+from funky.cards import cards
 
 class MarketView(Gtk.Box):
 	def __init__(self, game):
@@ -10,19 +11,19 @@ class MarketView(Gtk.Box):
 			sel = self.plants.get_selected()
 			if not sel:
 				return
-			img, txt, idx = sel
+			card, text = sel
 			price = self.c.get_value_as_int()
-			self.game.bid(idx, price)
+			self.game.bid(card.idx, price)
 		def pass_cb(_):
 			self.game.bid(-1, -1)
 
 		def sel_cb(_):
 			sel = self.plants.get_selected()
 			if not sel:
-				self.cur.update_plant(0, -1)
+				self.cur.update_item(0, None, None)
 				return
-			img, txt, idx = sel
-			self.cur.update_plant(0, idx)
+			card, text = sel
+			self.cur.update_item(0, card, None)
 			# TODO: know start price
 			#self.c.set_value()
 
@@ -50,14 +51,14 @@ class MarketView(Gtk.Box):
 		hbox.pack_start(self.title, True, True, 5)
 		self.pack_start(hbox, True, True, 5)
 
-		self.plants = PlantList(indices = (-1 for x in xrange(8)))
+		self.plants = PlantList(((None, None) for x in xrange(8)))
 		self.plants.set_columns(4)
 		self.plants.connect('selection-changed', sel_cb)
 		self.pack_start(self.plants, True, True, 5)
 
 		hbox = Gtk.Box(orientation = Gtk.Orientation.HORIZONTAL,
 					spacing = 20)
-		self.cur = PlantList(indices = [-1], selectable = False)
+		self.cur = PlantList(((None, None),), selectable = False)
 		hbox.pack_start(self.cur, False, True, 5)
 
 		vbox = Gtk.Box(orientation = Gtk.Orientation.VERTICAL,
@@ -89,14 +90,15 @@ class MarketView(Gtk.Box):
 	def update_market(self, cards_left, market):
 		t = '<b>Power Plant Auction: %u plants left</b>'%cards_left
 		self.title.set_markup(t)
-		self.plants.update(market)
+		m = ((cards[i], None) for i in market)
+		self.plants.set_plants(m)
 
 	def update_bid(self, plant, bid, player):
 		if plant < 0 or player is None:
 			self.p.set_markup('<b>Player</b>')
 			self.c.set_value(1)
-			self.cur.update_plant(0, -1)
+			self.cur.update_item(0, None, None)
 			return
 		self.p.set_markup('<b>Player: %s</b>'%player)
 		self.c.set_value(bid)
-		self.cur.update_plant(0, plant)
+		self.cur.update_item(0, cards[plant], None)

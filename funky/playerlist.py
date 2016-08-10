@@ -3,6 +3,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
 from plantlist import PlantList
+from funky.cards import cards
 
 from collections import namedtuple
 
@@ -52,10 +53,17 @@ class PlayerRow(Gtk.ListBoxRow):
 	def update_cities(self, cities, cap):
 		self.cities.set_markup('<b>%d/%d cities</b>'%(cap, cities))
 	def update_plants(self, plants):
-		self.plants.update(plants)
-	def update_stock(self, stock):
-		for i, s in enumerate(stock):
-			self.plants.update_stock(i, *s)
+		def c(idx):
+			if idx < 0:
+				return None
+			return cards[idx]
+		p = ((c(x), None) for x in plants)
+		self.plants.set_plants(p)
+	def update_stock(self, stk):
+		for i, (stock,cap) in enumerate(stk):
+			stock = (stock >> 10) + (stock & 0x3ff)
+			text = '%d/%d'%(stock, cap)
+			self.plants.update_text(i, text)
 
 class PlayerList(Gtk.ListBox):
 	def __init__(self, game):

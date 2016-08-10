@@ -3,6 +3,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GObject
 
 from plantlist import PlantList
+from funky.cards import cards
 
 class FireBox(Gtk.Box):
 	def __init__(self, plant_index, dcb):
@@ -11,7 +12,7 @@ class FireBox(Gtk.Box):
 				spacing = 0)
 		self.plant_index = plant_index
 
-		self.p = PlantList(indices = (-1, ),
+		self.p = PlantList(((None, None),),
 					show_text = True,
 					selectable = False)
 		self.d = Gtk.Button.new_with_label('Demolish')
@@ -77,9 +78,11 @@ class FireView(Gtk.Box):
 		self.game.connect('update_plants', plants_cb)
 		self.game.connect('update_plant_stock', plant_stock_cb)
 
-	def update_stock(self, stock):
-		for i, s in enumerate(stock):
-			self.p[i].p.update_stock(0, *s)
+	def update_stock(self, stk):
+		for i, (stock, cap) in enumerate(stk):
+			stock = (stock >> 10) + (stock & 0x3ff)
+			text = '%d/%d'%(stock, cap)
+			self.p[i].p.update_text(0, text)
 	def update_plants(self, plants):
 		for i, p in enumerate(plants):
-			self.p[i].p.update_plant(0, p)
+			self.p[i].p.update_item(0, cards[p], None)
