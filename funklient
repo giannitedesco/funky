@@ -12,6 +12,7 @@ from funky import *
 from struct import unpack
 from os import environ
 from os.path import join
+from argparse import ArgumentParser
 import traceback
 
 reactor = gtk3reactor.install()
@@ -57,7 +58,7 @@ class FunkWindow(Gtk.Window):
 	def __from_net(self):
 		self.__c = self.__cr.connectTCP('game.brettspielwelt.de', 7670)
 
-	def __init__(self):
+	def __init__(self, read_log = None):
 		def swin_cb(_, s):
 			self.game.cl_cmd(s)
 		def tx_cb(_, msg):
@@ -175,11 +176,10 @@ class FunkWindow(Gtk.Window):
 		hb.pack_end(stack_switcher)
 		self.set_titlebar(hb)
 
-		online = False
-		if online:
-			self.__from_net()
+		if read_log:
+			self.__from_file(read_log)
 		else:
-			self.__from_file('rx.log')
+			self.__from_net()
 
 	def first_init(self):
 		x = client.InitClientMsg()
@@ -257,19 +257,27 @@ class FunkWindow(Gtk.Window):
 			pass
 
 class FunKlient(Gtk.Application):
-	def __init__(self):
+	def __init__(self, read_log = None):
 		super(FunKlient, self).__init__(
 				application_id = 'apps.fun.klient',
 				flags = Gio.ApplicationFlags.FLAGS_NONE)
 		self.connect('activate', self.on_activate)
+		self.read_log = read_log
 
 	def on_activate(self, data = None):
-		window = FunkWindow()
+		window = FunkWindow(self.read_log)
 		window.show_all()
 		self.add_window(window)
 
 def main():
-	app = FunKlient()
+	opts = ArgumentParser(description='FunKlient - BSW Powergrid client')
+	opts.add_argument('-r', '--read-log',
+				metavar = 'path',
+				type = str,
+				help = 'Join a path to a config path')
+	args = opts.parse_args()
+
+	app = FunKlient(args.read_log)
 	reactor.registerGApplication(app)
 	reactor.run()
 
