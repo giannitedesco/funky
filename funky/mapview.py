@@ -166,6 +166,8 @@ class MapView(Gtk.DrawingArea):
 		p = load_map(nr)
 		self.surf = surf(p)
 		self.cxy = cxy[nr]
+		self.set_size_request(self.surf.get_width(),
+					self.surf.get_height())
 
 	def update_cities(self, cities):
 		self.cities = cities

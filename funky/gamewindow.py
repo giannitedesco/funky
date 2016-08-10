@@ -93,7 +93,8 @@ class GameWindow(Gtk.Box):
 		uscr.add(vbox)
 
 		pscr = Gtk.ScrolledWindow()
-		pscr.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+		pscr.set_policy(Gtk.PolicyType.AUTOMATIC,
+				Gtk.PolicyType.AUTOMATIC)
 		pscr.add(self.map_win)
 
 		self.pack_start(uscr, False, True, 0)
