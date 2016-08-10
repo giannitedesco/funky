@@ -58,13 +58,34 @@ class PlayerRow(Gtk.ListBoxRow):
 			self.plants.update_stock(i, *s)
 
 class PlayerList(Gtk.ListBox):
-	def __init__(self):
+	def __init__(self, game):
+		def money_cb(_, money):
+			self.update_player_money(money)
+		def players_cb(_, nr, names):
+			self.update_player_names(nr, names)
+		def current_player_cb(_, cp, iam):
+			self.update_current_player(cp)
+		def nr_city_cb(_, nr_city):
+			self.update_player_cities(nr_city)
+		def plants_cb(_, plants):
+			self.update_player_plants(plants)
+		def plant_stock_cb(_, prs):
+			self.update_plant_stock(prs)
+
 		super(PlayerList, self).__init__()
+		self.game = game
+
 		self.set_can_focus(False)
-		#self.set_sensitive(False)
 		self.set_selection_mode(Gtk.SelectionMode.NONE)
 		self.null = Gtk.RadioButton()
 		self.prev = self.null
+
+		self.game.connect('update_money', money_cb)
+		self.game.connect('update_players', players_cb)
+		self.game.connect('update_nr_city', nr_city_cb)
+		self.game.connect('update_current_player', current_player_cb)
+		self.game.connect('update_plants', plants_cb)
+		self.game.connect('update_plant_stock', plant_stock_cb)
 
 	def update_current_player(self, idx):
 		r = self.get_row_at_index(idx)

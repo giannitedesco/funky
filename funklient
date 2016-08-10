@@ -175,7 +175,7 @@ class FunkWindow(Gtk.Window):
 		hb.pack_end(stack_switcher)
 		self.set_titlebar(hb)
 
-		online = True
+		online = False
 		if online:
 			self.__from_net()
 		else:

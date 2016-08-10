@@ -13,23 +13,6 @@ from funkgame import FunkGame
 
 class GameWindow(Gtk.Box):
 	def __init__(self):
-		# Callbacks for buttons pushed in child windows
-		# TODO: change to signals
-		def bid_cb(_, index, price):
-			self.game.bid(index, price)
-		def pass_cb(_):
-			self.game.bid(-1, -1)
-		def buy_cb(_, k, o, m, ke):
-			self.game.buy_rs(k, o, m, ke)
-		def build_cb(_, city):
-			self.game.build(0, city)
-		def nobuild_cb(_):
-			self.game.build(1, 0)
-		def fire_cb(_, a, b, c, d):
-			self.game.fire(a, b, c, d)
-		def demolish_cb(_, plant_idx):
-			self.game.demolish(plant_idx)
-
 		# Callbacks for game events
 		def ps_cb(_, p, s):
 			n = ('auction',
@@ -45,40 +28,6 @@ class GameWindow(Gtk.Box):
 				'fire',
 				None)
 			self.stack.set_visible_child_name(n[p])
-		def money_cb(_, money):
-			self.player_list.update_player_money(money)
-		def players_cb(_, nr, names):
-			self.player_list.update_player_names(nr, names)
-		def plants_cb(_, plants):
-			self.player_list.update_player_plants(plants)
-			if self.game.i_am < 0:
-				return
-			self.fire_win.update_plants(plants[self.game.i_am])
-		def nr_city_cb(_, nr_city):
-			self.player_list.update_player_cities(nr_city)
-		def market_cb(_, cards_left, market):
-			self.market.update_market(cards_left, market)
-		def cur_bid_cb(_, card, bid, player):
-			if player < 0:
-				p = None
-			else:
-				p = self.game.players[player]
-			self.market.update_bid(card, bid, p)
-		def map_cb(_, nr, dists):
-			self.map_win.set_map(nr, dists)
-		def stock_cb(_, rs):
-			self.rs.update_stock(*rs)
-		def cities_cb(_, cities):
-			self.map_win.update_cities(cities)
-		def plant_stock_cb(_, prs):
-			self.player_list.update_plant_stock(prs)
-			if self.game.i_am < 0:
-				return
-			self.fire_win.update_stock(prs[self.game.i_am])
-		def current_player_cb(_, cp, iam):
-			self.player_list.update_current_player(cp)
-		def city_active_cb(_, city_active):
-			self.map_win.update_city_active(city_active)
 
 		super(GameWindow, self).__init__(\
 				orientation = Gtk.Orientation.HORIZONTAL,
@@ -87,26 +36,14 @@ class GameWindow(Gtk.Box):
 		# Game object
 		self.game = FunkGame()
 		self.game.connect('update_ps', ps_cb)
-		self.game.connect('update_money', money_cb)
-		self.game.connect('update_players', players_cb)
-		self.game.connect('update_plants', plants_cb)
-		self.game.connect('update_nr_city', nr_city_cb)
-		self.game.connect('update_market', market_cb)
-		self.game.connect('update_bid', cur_bid_cb)
-		self.game.connect('update_map', map_cb)
-		self.game.connect('update_stock', stock_cb)
-		self.game.connect('update_cities', cities_cb)
-		self.game.connect('update_plant_stock', plant_stock_cb)
-		self.game.connect('update_current_player', current_player_cb)
-		self.game.connect('update_city_active', city_active_cb)
 
 		# Child windows
-		self.player_list = PlayerList()
-		self.map_win = MapView()
-		self.rs = ResourceView()
-		self.market = MarketView()
-		self.build_win = BuildView()
-		self.fire_win = FireView()
+		self.player_list = PlayerList(self.game)
+		self.map_win = MapView(self.game)
+		self.rs = ResourceView(self.game)
+		self.market = MarketView(self.game)
+		self.build_win = BuildView(self.game)
+		self.fire_win = FireView(self.game)
 
 		self.stack = stack = Gtk.Stack()
 		stack.set_transition_type(\
@@ -144,14 +81,6 @@ class GameWindow(Gtk.Box):
 		ss = Gtk.StackSwitcher()
 		ss.set_stack(stack)
 		ss.set_halign(Gtk.Align.CENTER)
-
-		self.rs.connect('buy', buy_cb)
-		self.market.connect('bid', bid_cb)
-		self.market.connect('pass', pass_cb)
-		self.map_win.connect('build', build_cb)
-		self.build_win.connect('finished-building', nobuild_cb)
-		self.fire_win.connect('fire', fire_cb)
-		self.fire_win.connect('demolish', demolish_cb)
 
 		vbox = Gtk.Box(orientation = Gtk.Orientation.VERTICAL,
 					spacing = 5)

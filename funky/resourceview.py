@@ -72,21 +72,19 @@ class ButtonRow(Gtk.ListBoxRow):
 				(k, o, m, ke))
 
 class ResourceView(Gtk.ListBox):
-	__gsignals__ = {
-		'buy':
-			(GObject.SIGNAL_RUN_LAST, None, (int, int, int, int)),
-	}
-	def __init__(self):
+	def __init__(self, game):
 		def buy_cb(k, o, m, ke):
-			self.emit('buy', k, o, m, ke)
+			self.game.buy_rs(k, o, m, ke)
 		def cb(*_):
 			self.buttons.update_totals(*map(int, (self.coal,
 								self.oil,
 								self.trash,
 								self.nuclear)))
+		def stock_cb(_, rs):
+			self.update_stock(*rs)
+
 		super(ResourceView, self).__init__()
-		self.set_can_focus(False)
-		self.set_selection_mode(Gtk.SelectionMode.NONE)
+		self.game = game
 
 		name_row = Gtk.ListBoxRow()
 		name = Gtk.Label(xalign = 0)
@@ -113,6 +111,11 @@ class ResourceView(Gtk.ListBox):
 		self.insert(self.trash, -1)
 		self.insert(self.nuclear, -1)
 		self.insert(self.buttons, -1)
+
+		self.set_can_focus(False)
+		self.set_selection_mode(Gtk.SelectionMode.NONE)
+
+		self.game.connect('update_stock', stock_cb)
 
 	def update_stock(self, k, o, m, ke):
 		self.coal.update_count(k)

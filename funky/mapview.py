@@ -123,16 +123,20 @@ def click(self, evt):
 		yd = y - evt.y
 		d = sqrt(xd * xd + yd * yd)
 		if d < 25:
-			self.emit('build', i)
+			self.game.build(0, i)
 			break
 
 class MapView(Gtk.DrawingArea):
-	__gsignals__ = {
-		'build':
-			(GObject.SIGNAL_RUN_LAST, None, (int, )),
-	}
-	def __init__(self):
+	def __init__(self, game):
+		def map_cb(_, nr, dists):
+			self.set_map(nr, dists)
+		def cities_cb(_, cities):
+			self.update_cities(cities)
+		def city_active_cb(_, city_active):
+			self.update_city_active(city_active)
+
 		super(MapView, self).__init__()
+		self.game = game
 		self.cities = None
 		self.houses = None
 
@@ -142,6 +146,10 @@ class MapView(Gtk.DrawingArea):
 		self.connect('draw', draw)
 		self.connect('button-release-event', click)
 		self.set_can_focus(False)
+
+		self.game.connect('update_map', map_cb)
+		self.game.connect('update_cities', cities_cb)
+		self.game.connect('update_city_active', city_active_cb)
 
 	def clear_map(self):
 		self.surf = None

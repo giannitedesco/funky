@@ -5,20 +5,17 @@ from gi.repository import Gtk, GObject
 from plantlist import PlantList
 
 class MarketView(Gtk.Box):
-	__gsignals__ = {
-		'bid':
-			(GObject.SIGNAL_RUN_LAST, None, (int, int)),
-		'pass':
-			(GObject.SIGNAL_RUN_LAST, None, ()),
-	}
-	def __init__(self):
+	def __init__(self, game):
 		def bid_cb(*_):
 			sel = self.plants.get_selected()
 			if not sel:
 				return
 			img, txt, idx = sel
 			price = self.c.get_value_as_int()
-			self.emit('bid', idx, price)
+			self.game.bid(idx, price)
+		def pass_cb(_):
+			self.game.bid(-1, -1)
+
 		def sel_cb(_):
 			sel = self.plants.get_selected()
 			if not sel:
@@ -26,15 +23,23 @@ class MarketView(Gtk.Box):
 				return
 			img, txt, idx = sel
 			self.cur.update_plant(0, idx)
-
 			# TODO: know start price
 			#self.c.set_value()
 
-		def pass_cb(_):
-			self.emit('pass')
+		def market_cb(_, cards_left, market):
+			self.update_market(cards_left, market)
+		def cur_bid_cb(_, card, bid, player):
+			if player < 0:
+				p = None
+			else:
+				p = self.game.players[player]
+			self.update_bid(card, bid, p)
+
 		super(MarketView, self).__init__(\
 				orientation = Gtk.Orientation.VERTICAL,
 				spacing = 5)
+
+		self.game = game
 
 		hbox = Gtk.Box(orientation = Gtk.Orientation.HORIZONTAL,
 					spacing = 20)
@@ -77,6 +82,9 @@ class MarketView(Gtk.Box):
 		self.pack_start(hbox, False, True, 5)
 
 		self.update_bid(-1, 0, -1)
+
+		self.game.connect('update_market', market_cb)
+		self.game.connect('update_bid', cur_bid_cb)
 
 	def update_market(self, cards_left, market):
 		t = '<b>Power Plant Auction: %u plants left</b>'%cards_left

@@ -33,22 +33,26 @@ class FireBox(Gtk.Box):
 
 
 class FireView(Gtk.Box):
-	__gsignals__ = {
-		'demolish':
-			(GObject.SIGNAL_RUN_LAST, None, (int, )),
-		'fire':
-			(GObject.SIGNAL_RUN_LAST, None, (int, int, int, int)),
-	}
-	def __init__(self):
+	def __init__(self, game):
 		def fcb(*_):
-			self.emit('fire', *[x.get_mask() for x in self.p])
+			self.game.fire(*[x.get_mask() for x in self.p])
 
 		def dcb(plant_index):
-			self.emit('demolish', plant_index)
+			self.game.demolish(plant_index)
+
+		def plant_stock_cb(_, prs):
+			if self.game.i_am < 0:
+				return
+			self.update_stock(prs[self.game.i_am])
+		def plants_cb(_, plants):
+			if self.game.i_am < 0:
+				return
+			self.update_plants(plants[self.game.i_am])
 
 		super(FireView, self).__init__(\
 				orientation = Gtk.Orientation.VERTICAL,
 				spacing = 5)
+		self.game = game
 
 		name = Gtk.Label(xalign = 0)
 		name.set_markup('<b>Fire Plants</b>')
@@ -69,6 +73,9 @@ class FireView(Gtk.Box):
 		self.pack_start(nhb, False, True, 5)
 		self.pack_start(hbox, True, True, 5)
 		self.pack_start(done, False, True, 5)
+
+		self.game.connect('update_plants', plants_cb)
+		self.game.connect('update_plant_stock', plant_stock_cb)
 
 	def update_stock(self, stock):
 		for i, s in enumerate(stock):

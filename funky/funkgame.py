@@ -55,7 +55,6 @@ class FunkGame(GObject.GObject):
 		self.round = -1
 
 		self.nr_players = 0
-		self.i_am_id = -1
 		self.sequence = (-1, -1, -1, -1, -1, -1)
 		self.players = (' ', ' ', ' ', ' ', ' ', ' ')
 		self.money = (50, 50, 50, 50, 50, 50)
@@ -236,7 +235,7 @@ class FunkGame(GObject.GObject):
 			if msg.sequence:
 				self.sequence = msg.sequence
 
-			self.i_am_id = int(msg.i_am_id)
+			self.i_am = int(msg.i_am_id)
 
 			an = ('player%d'%x for x in xrange(1, 7))
 			players = tuple(map(lambda x:getattr(msg, x), an))
@@ -244,7 +243,6 @@ class FunkGame(GObject.GObject):
 
 			self.update_money(msg.money)
 
-			self.i_am = msg.i_am_id
 			self.update_current_player(msg.current_player)
 
 		def score_cb(msg):
