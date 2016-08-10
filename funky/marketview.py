@@ -21,11 +21,12 @@ class MarketView(Gtk.Box):
 			sel = self.plants.get_selected()
 			if not sel:
 				self.cur.update_item(0, None, None)
+				self.c.set_range(0, 10000)
 				return
 			card, text = sel
 			self.cur.update_item(0, card, None)
-			# TODO: know start price
-			#self.c.set_value()
+			self.c.set_range(card.price, 10000)
+			self.c.set_value(card.price)
 
 		def market_cb(_, cards_left, market):
 			self.update_market(cards_left, market)
