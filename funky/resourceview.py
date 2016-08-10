@@ -2,6 +2,26 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GObject
 
+from enum import Enum
+
+class Prices(Enum):
+	other = (
+			8, 8, 8,
+			7, 7, 7,
+			6, 6, 6,
+			5, 5, 5,
+			4, 4, 4,
+			3, 3, 3,
+			2, 2, 2,
+			1, 1, 1,
+		)
+	nuclear = (
+			16, 14, 12,
+			10, 8, 7,
+			6, 5, 4,
+			3, 2, 1,
+		)
+
 class ResourceRow(Gtk.ListBoxRow):
 	def __init__(self, name, count):
 		super(ResourceRow, self).__init__()
@@ -54,6 +74,7 @@ class ButtonRow(Gtk.ListBoxRow):
 		self.name.set_markup('<b>Purchase</b>')
 
 		self.d = Gtk.Label()#xalign = 0)
+		self.update_stock(0, 0, 0, 0)
 		self.update_totals(0, 0, 0, 0)
 
 		b = Gtk.Button.new_with_label('buy')
@@ -68,8 +89,22 @@ class ButtonRow(Gtk.ListBoxRow):
 
 	def update_totals(self, k, o, m, ke):
 		self.totals = (k, o, m, ke)
-		self.d.set_markup('%d coal, %d oil, %d trash, %d nuclear'%\
-				(k, o, m, ke))
+
+		x = zip(self.totals, self.avail,
+				(
+					Prices.other,
+					Prices.other,
+					Prices.other,
+					Prices.nuclear,
+				)
+			)
+
+		total = sum(sum(p.value[a-t:a]) for (t, a, p) in x)
+
+		self.d.set_markup('total price %d'%total)
+
+	def update_stock(self, k, o, m, ke):
+		self.avail = (k, o, m, ke)
 
 class ResourceView(Gtk.ListBox):
 	def __init__(self, game):
@@ -122,3 +157,4 @@ class ResourceView(Gtk.ListBox):
 		self.oil.update_count(o)
 		self.trash.update_count(m)
 		self.nuclear.update_count(ke)
+		self.buttons.update_stock(k, o, m, ke)
