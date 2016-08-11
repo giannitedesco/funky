@@ -1,6 +1,6 @@
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+from gi.repository import Gtk,Gdk
 
 from plantlist import PlantList
 from funky.cards import cards
@@ -10,7 +10,7 @@ from collections import namedtuple
 Player = namedtuple('Player', ('name', 'money', 'cap', 'cities', 'plants'))
 
 class PlayerRow(Gtk.ListBoxRow):
-	def __init__(self, u, prev = None):
+	def __init__(self, u, prev = None, color = None):
 		super(PlayerRow, self).__init__()
 
 		vbox = Gtk.Box(orientation = Gtk.Orientation.VERTICAL,
@@ -23,13 +23,18 @@ class PlayerRow(Gtk.ListBoxRow):
 		self.rb = Gtk.RadioButton.new_from_widget(prev)
 		self.rb.set_sensitive(False)
 
+		self.col = Gtk.ColorButton.new_with_rgba(color)
+		self.col.set_sensitive(False)
+		self.col.props.title = 'hi'
+
 		self.name = Gtk.Label(xalign = 0)
 
 		self.money = Gtk.Label()
 
 		self.cities = Gtk.Label()
 
-		hbox.pack_start(self.rb, False, False, 5)
+		hbox.pack_start(self.rb, False, False, 0)
+		hbox.pack_start(self.col, False, False, 0)
 		hbox.pack_start(self.name, True, True, 5)
 		hbox.pack_start(self.cities, False, True, 5)
 		hbox.pack_start(self.money, False, True, 5)
@@ -49,9 +54,9 @@ class PlayerRow(Gtk.ListBoxRow):
 	def update_name(self, name):
 		self.name.set_markup('<b>%s</b>'%name)
 	def update_money(self, money):
-		self.money.set_markup('<b>%d elektro</b>'%money)
+		self.money.set_markup('<b>%d</b>'%money)
 	def update_cities(self, cities, cap):
-		self.cities.set_markup('<b>%d/%d cities</b>'%(cap, cities))
+		self.cities.set_markup('<b>%d/%d</b>'%(cap, cities))
 	def update_plants(self, plants):
 		def c(idx):
 			if idx < 0:
@@ -112,13 +117,24 @@ class PlayerList(Gtk.ListBox):
 			r.update_stock(pr)
 
 	def update_player_names(self, nr, names):
+		colors = (
+			Gdk.RGBA(0.22265625, 0.234375, 0.6484375),
+			Gdk.RGBA(0.58984375, 0.20703125, 0.54296875),
+			Gdk.RGBA(0.71484375, 0.70703125, 0.23828125),
+			Gdk.RGBA(0.6171875, 0.171875, 0.19921875),
+			Gdk.RGBA(0.34765625, 0.48046875, 0.42578125),
+			Gdk.RGBA(0.60546875, 0.4609375, 0.2265625),
+
+		)
 		for i, n in enumerate(names[:nr]):
 			if not n or n == ' ':
 				n = '**'
 			r = self.get_row_at_index(i)
 			if r is None:
 				u = Player(n, 50, 0, 0, (-1, -1, -1, -1))
-				r = PlayerRow(u, prev = self.prev)
+				color = colors[i]
+				r = PlayerRow(u, prev = self.prev,
+						color = color)
 				self.prev = r.rb
 				self.insert(r, i)
 			else:
