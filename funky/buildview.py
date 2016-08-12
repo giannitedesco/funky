@@ -5,7 +5,7 @@ from gi.repository import Gtk, GObject
 class BuildView(Gtk.Box):
 	def __init__(self, game):
 		def dcb(*_):
-			self.game.build(1, 0)
+			self.game.finish_building()
 
 		super(BuildView, self).__init__(\
 				orientation = Gtk.Orientation.VERTICAL,

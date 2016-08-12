@@ -5,12 +5,17 @@ from gi.repository import Gtk,Gdk
 from plantlist import PlantList
 from funky.cards import cards
 
-from collections import namedtuple
-
-Player = namedtuple('Player', ('name', 'money', 'cap', 'cities', 'plants'))
+colors = (
+	Gdk.RGBA(0.22265625, 0.234375, 0.6484375),
+	Gdk.RGBA(0.58984375, 0.20703125, 0.54296875),
+	Gdk.RGBA(0.71484375, 0.70703125, 0.23828125),
+	Gdk.RGBA(0.6171875, 0.171875, 0.19921875),
+	Gdk.RGBA(0.34765625, 0.48046875, 0.42578125),
+	Gdk.RGBA(0.60546875, 0.4609375, 0.2265625),
+)
 
 class PlayerRow(Gtk.ListBoxRow):
-	def __init__(self, u, prev = None, color = None):
+	def __init__(self, p, prev = None):
 		super(PlayerRow, self).__init__()
 
 		vbox = Gtk.Box(orientation = Gtk.Orientation.VERTICAL,
@@ -23,7 +28,7 @@ class PlayerRow(Gtk.ListBoxRow):
 		self.rb = Gtk.RadioButton.new_from_widget(prev)
 		self.rb.set_sensitive(False)
 
-		self.col = Gtk.ColorButton.new_with_rgba(color)
+		self.col = Gtk.ColorButton.new_with_rgba(colors[p.seat_nr])
 		self.col.set_sensitive(False)
 		self.col.props.title = 'hi'
 
@@ -43,13 +48,11 @@ class PlayerRow(Gtk.ListBoxRow):
 		self.plants = PlantList(selectable = False, show_text = True)
 		vbox.pack_start(self.plants, True, True, 0)
 
-		self.update(u)
-
-	def update(self, u):
-		self.update_name(u.name)
-		self.update_cities(u.cities, u.cap)
-		self.update_money(u.money)
-		self.update_plants(u.plants)
+		self.update_name(p.name)
+		self.update_cities(p.nr_cities, p.capacity)
+		self.update_money(p.money)
+		self.update_plants(p.plants)
+		self.update_stock(p.stock)
 
 	def update_name(self, name):
 		self.name.set_markup('<b>%s</b>'%name)
@@ -58,12 +61,7 @@ class PlayerRow(Gtk.ListBoxRow):
 	def update_cities(self, cities, cap):
 		self.cities.set_markup('<b>%d/%d</b>'%(cap, cities))
 	def update_plants(self, plants):
-		def c(idx):
-			if idx < 0:
-				return None
-			return cards[idx]
-		p = ((c(x), None) for x in plants)
-		self.plants.set_plants(p)
+		self.plants.set_plants(((x, None) for x in plants))
 	def update_stock(self, stk):
 		for i, (stock,cap) in enumerate(stk):
 			stock = (stock >> 10) + (stock & 0x3ff)
@@ -72,18 +70,30 @@ class PlayerRow(Gtk.ListBoxRow):
 
 class PlayerList(Gtk.ListBox):
 	def __init__(self, game):
-		def money_cb(_, money):
-			self.update_player_money(money)
-		def players_cb(_, nr, names):
-			self.update_player_names(nr, names)
+		def update_cb(game, p):
+			r = self.get_row_at_index(p.seat_nr)
+			r.update_money(p.money)
+			r.update_name(p.name)
+			r.update_cities(p.nr_cities, p.capacity)
+			r.update_plants(p.plants)
+			r.update_stock(p.stock)
+
+		def join_cb(game, p):
+			r = PlayerRow(p, prev = self.prev)
+			self.prev = r.rb
+			self.insert(r, -1)
+			self.show_all()
+
+		def leave_cb(game, p):
+			r = self.get_row_at_index(p.seat_nr)
+			self.remove(r)
+
 		def current_player_cb(_, cp, iam):
-			self.update_current_player(cp)
-		def nr_city_cb(_, nr_city):
-			self.update_player_cities(nr_city)
-		def plants_cb(_, plants):
-			self.update_player_plants(plants)
-		def plant_stock_cb(_, prs):
-			self.update_plant_stock(prs)
+			r = self.get_row_at_index(cp)
+			if r is None:
+				self.null.set_active(True)
+			else:
+				r.rb.set_active(True)
 
 		super(PlayerList, self).__init__()
 		self.game = game
@@ -93,83 +103,7 @@ class PlayerList(Gtk.ListBox):
 		self.null = Gtk.RadioButton()
 		self.prev = self.null
 
-		self.game.connect('update_money', money_cb)
-		self.game.connect('update_players', players_cb)
-		self.game.connect('update_nr_city', nr_city_cb)
 		self.game.connect('update_current_player', current_player_cb)
-		self.game.connect('update_plants', plants_cb)
-		self.game.connect('update_plant_stock', plant_stock_cb)
-
-	def update_current_player(self, idx):
-		r = self.get_row_at_index(idx)
-		if r is None:
-			self.null.set_active(True)
-		else:
-			r.rb.set_active(True)
-
-	def update_plant_stock(self, prs):
-		for i, pr in enumerate(prs):
-			if not pr or pr == (-1, -1, -1, -1):
-				continue
-			r = self.get_row_at_index(i)
-			if r is None:
-				continue
-			r.update_stock(pr)
-
-	def update_player_names(self, nr, names):
-		colors = (
-			Gdk.RGBA(0.22265625, 0.234375, 0.6484375),
-			Gdk.RGBA(0.58984375, 0.20703125, 0.54296875),
-			Gdk.RGBA(0.71484375, 0.70703125, 0.23828125),
-			Gdk.RGBA(0.6171875, 0.171875, 0.19921875),
-			Gdk.RGBA(0.34765625, 0.48046875, 0.42578125),
-			Gdk.RGBA(0.60546875, 0.4609375, 0.2265625),
-
-		)
-		for i, n in enumerate(names[:nr]):
-			if not n or n == ' ':
-				n = '**'
-			r = self.get_row_at_index(i)
-			if r is None:
-				u = Player(n, 50, 0, 0, (-1, -1, -1, -1))
-				color = colors[i]
-				r = PlayerRow(u, prev = self.prev,
-						color = color)
-				self.prev = r.rb
-				self.insert(r, i)
-			else:
-				r.update_name(n)
-		self.show_all()
-
-	def update_player_plants(self, plants):
-		for (i, p) in enumerate(plants):
-			r = self.get_row_at_index(i)
-			if r is None:
-				if p == (-1, -1, -1, -1):
-					continue
-				raise Exception
-			else:
-				r.update_plants(p)
-		self.show_all()
-
-	def update_player_money(self, money):
-		for (i, m) in enumerate(money):
-			r = self.get_row_at_index(i)
-			if r is None:
-				if m == 50:
-					continue
-				raise Exception
-			else:
-				r.update_money(m)
-		self.show_all()
-
-	def update_player_cities(self, cities):
-		for (i, (n, c)) in enumerate(cities):
-			r = self.get_row_at_index(i)
-			if r is None:
-				if (n, c) == (0, 0):
-					continue
-				raise Exception
-			else:
-				r.update_cities(n, c)
-		self.show_all()
+		self.game.connect('player_join', join_cb)
+		self.game.connect('player_update', update_cb)
+		self.game.connect('player_leave', leave_cb)

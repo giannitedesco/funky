@@ -66,4 +66,4 @@ class PlantList(Gtk.IconView):
 	def update_text(self, idx, text):
 		s = self.get_model()
 		it = s.get_iter((idx,))
-		s.set_value(it, 0, text)
+		s.set_value(it, 2, text)

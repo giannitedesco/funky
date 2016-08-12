@@ -100,7 +100,7 @@ def draw(self, cr):
 			continue
 		for i, o in enumerate(h):
 			if o < 0 or o >= 6:
-				break
+				continue
 
 			t = self.houses[o]
 			xx = x - 11 + (0, -10, 10)[i]
@@ -123,7 +123,7 @@ def click(self, evt):
 		yd = y - evt.y
 		d = sqrt(xd * xd + yd * yd)
 		if d < 25:
-			self.game.build(0, i)
+			self.game.build(i)
 			break
 
 class MapView(Gtk.DrawingArea):

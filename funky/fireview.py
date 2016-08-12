@@ -3,7 +3,6 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GObject
 
 from plantlist import PlantList
-from funky.cards import cards
 
 class FireBox(Gtk.Box):
 	def __init__(self, plant_index, dcb):
@@ -41,14 +40,9 @@ class FireView(Gtk.Box):
 		def dcb(plant_index):
 			self.game.demolish(plant_index)
 
-		def plant_stock_cb(_, prs):
-			if self.game.i_am < 0:
-				return
-			self.update_stock(prs[self.game.i_am])
-		def plants_cb(_, plants):
-			if self.game.i_am < 0:
-				return
-			self.update_plants(plants[self.game.i_am])
+		def update_cb(game, p):
+			self.update_plants(p.plants)
+			self.update_stock(p.stock)
 
 		super(FireView, self).__init__(\
 				orientation = Gtk.Orientation.VERTICAL,
@@ -75,8 +69,7 @@ class FireView(Gtk.Box):
 		self.pack_start(hbox, True, True, 5)
 		self.pack_start(done, False, True, 5)
 
-		self.game.connect('update_plants', plants_cb)
-		self.game.connect('update_plant_stock', plant_stock_cb)
+		self.game.connect('update_self', update_cb)
 
 	def update_stock(self, stk):
 		for i, (stock, cap) in enumerate(stk):
@@ -85,4 +78,4 @@ class FireView(Gtk.Box):
 			self.p[i].p.update_text(0, text)
 	def update_plants(self, plants):
 		for i, p in enumerate(plants):
-			self.p[i].p.update_item(0, cards[p], None)
+			self.p[i].p.update_item(0, p, None)

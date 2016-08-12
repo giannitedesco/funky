@@ -105,6 +105,7 @@ class ButtonRow(Gtk.ListBoxRow):
 
 	def update_stock(self, k, o, m, ke):
 		self.avail = (k, o, m, ke)
+		self.update_totals(k, o, m, ke)
 
 class ResourceView(Gtk.ListBox):
 	def __init__(self, game):
@@ -116,7 +117,12 @@ class ResourceView(Gtk.ListBox):
 								self.trash,
 								self.nuclear)))
 		def stock_cb(_, rs):
-			self.update_stock(*rs)
+			k, o, m, ke = rs
+			self.coal.update_count(k)
+			self.oil.update_count(o)
+			self.trash.update_count(m)
+			self.nuclear.update_count(ke)
+			self.buttons.update_stock(k, o, m, ke)
 
 		super(ResourceView, self).__init__()
 		self.game = game
@@ -151,10 +157,3 @@ class ResourceView(Gtk.ListBox):
 		self.set_selection_mode(Gtk.SelectionMode.NONE)
 
 		self.game.connect('update_stock', stock_cb)
-
-	def update_stock(self, k, o, m, ke):
-		self.coal.update_count(k)
-		self.oil.update_count(o)
-		self.trash.update_count(m)
-		self.nuclear.update_count(ke)
-		self.buttons.update_stock(k, o, m, ke)

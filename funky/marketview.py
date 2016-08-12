@@ -34,7 +34,7 @@ class MarketView(Gtk.Box):
 			if player < 0:
 				p = None
 			else:
-				p = self.game.players[player]
+				p = self.game.seats[player].name
 			self.update_bid(card, bid, p)
 
 		super(MarketView, self).__init__(\

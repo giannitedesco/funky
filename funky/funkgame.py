@@ -1,81 +1,115 @@
 import server, client
 from gi.repository import GObject
 
+from cards import cards
+
+RL = GObject.SIGNAL_RUN_LAST
+
+class GameSeat(GObject.GObject):
+	__gsignals__ = {
+		'join': (RL, None, ()),
+		'leave': (RL, None, ()),
+		'update': (RL, None, ()),
+	}
+	def __init__(self, snr):
+		super(GameSeat, self).__init__()
+		setter = super(GameSeat, self).__setattr__
+		setter('seat_nr', snr)
+		setter('in_game', False)
+		self.clear()
+
+	def clear(self):
+		setter = super(GameSeat, self).__setattr__
+		sig = self.in_game
+		setter('name', ' ')
+		setter('money', 50)
+		setter('nr_cities', 0)
+		setter('capacity', 0)
+		setter('plants', (None, None, None, None))
+		setter('stock', ((0,0), (0,0), (0,0), (0,0)))
+		setter('in_game', False)
+		if sig:
+			self.emit('leave')
+
+	def __setattr__(self, k, v):
+		old = getattr(self, k)
+		if v == old:
+			return
+		#print self.seat_nr, k, repr(old), '->', repr(v)
+		super(GameSeat, self).__setattr__(k, v)
+		if not self.in_game:
+			self.emit('join')
+			super(GameSeat, self).__setattr__('in_game', True)
+		self.emit('update')
+
 class FunkGame(GObject.GObject):
 	__gsignals__ = {
 		# Emitted with a Message which should be sent to server
-		'tx_msg':
-			(GObject.SIGNAL_RUN_LAST, None, (object, )),
+		'tx_msg': (RL, None, (object, )),
 
 		# Emitted with any unhandled messages
-		'rx_unhandled':
-			(GObject.SIGNAL_RUN_LAST, None, (object, )),
+		'rx_unhandled': (RL, None, (object, )),
 
 		# Emitted for any chat messages
-		'chat_msg':
-			(GObject.SIGNAL_RUN_LAST, None, (str, )),
+		'chat_msg': (RL, None, (str, )),
 
 		# Emitted for any chat messages
-		'log':
-			(GObject.SIGNAL_RUN_LAST, None, (str, )),
+		'log': (RL, None, (str, )),
 
 		# Game status updates
-		'update_ps':
-			(GObject.SIGNAL_RUN_LAST, None, (int, int)),
-		'update_money':
-			(GObject.SIGNAL_RUN_LAST, None, (object, )),
-		'update_players':
-			(GObject.SIGNAL_RUN_LAST, None, (int, object)),
-		'update_plants':
-			(GObject.SIGNAL_RUN_LAST, None, (object,)),
-		'update_nr_city':
-			(GObject.SIGNAL_RUN_LAST, None, (object,)),
-		'update_market':
-			(GObject.SIGNAL_RUN_LAST, None, (int, object)),
-		'update_map':
-			(GObject.SIGNAL_RUN_LAST, None, (int, object)),
-		'update_stock':
-			(GObject.SIGNAL_RUN_LAST, None, (object,)),
-		'update_cities':
-			(GObject.SIGNAL_RUN_LAST, None, (object,)),
-		'update_plant_stock':
-			(GObject.SIGNAL_RUN_LAST, None, (object, )),
-		'update_current_player':
-			(GObject.SIGNAL_RUN_LAST, None, (int, int)),
-		'update_city_active':
-			(GObject.SIGNAL_RUN_LAST, None, (object, )),
-		'update_bid':
-			(GObject.SIGNAL_RUN_LAST, None, (int, int, int)),
+		'update_ps': (RL, None, (int, int)),
+		'update_market':(RL, None, (int, object)),
+		'update_map': (RL, None, (int, object)),
+		'update_stock': (RL, None, (object,)),
+		'update_cities': (RL, None, (object,)),
+		'update_current_player': (RL, None, (int, int)),
+		'update_city_active': (RL, None, (object, )),
+		'update_bid': (RL, None, (int, int, int)),
+
+		'player_join': (RL, None, (object,)),
+		'player_update': (RL, None, (object,)),
+		'player_leave': (RL, None, (object,)),
+
+		'update_self': (RL, None, (object,)),
 	}
 
 	def __init__(self):
 		super(GObject.GObject, self).__init__()
+
+		def pjoin_cb(p):
+			self.emit('player_join', p)
+		def pupdate_cb(p):
+			self.emit('player_update', p)
+			if self.i_am >= 0 and p.seat_nr == self.i_am:
+				self.emit('update_self', p)
+		def pleave_cb(p):
+			self.emit('player_leave', p)
+
+		self.seats = tuple(GameSeat(snr) for snr in xrange(6))
+		for p in self.seats:
+			p.connect('join', pjoin_cb)
+			p.connect('update', pupdate_cb)
+			p.connect('leave', pleave_cb)
+
 		self.phase = -1
 		self.stufe = -1
 		self.round = -1
 
 		self.nr_players = 0
+		self.current_player = -1
+		self.i_am = -1
 		self.sequence = (-1, -1, -1, -1, -1, -1)
-		self.players = (' ', ' ', ' ', ' ', ' ', ' ')
-		self.money = (50, 50, 50, 50, 50, 50)
-		self.plants = ((-1, -1, -1, -1),
-				(-1, -1, -1, -1),
-				(-1, -1, -1, -1),
-				(-1, -1, -1, -1),
-				(-1, -1, -1, -1),
-				(-1, -1, -1, -1))
-		self.nr_city = ((0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0))
+
 		self.market = (-1, -1, -1, -1, -1, -1, -1, -1)
 		self.cur_bid = (-1, 0, -1)
 		self.cards_left = 0
+
 		self.map_nr = -1
-		self.stock = None
 		self.dist = None
 		self.cities = None
-		self.plant_stock = None
 		self.city_active = None
-		self.current_player = -1
-		self.i_am = -1
+
+		self.stock = None
 
 	def tx(self, msg):
 		'Emits a message to transmit to server'
@@ -105,32 +139,22 @@ class FunkGame(GObject.GObject):
 		self.emit('update_ps', self.phase, self.stufe)
 
 	def update_money(self, money):
-		if not money:
-			return
-		old_money = self.money
-		self.money = money
-		if self.money == old_money:
-			return
-		self.emit('update_money', self.money)
+		for m, s in zip(money, self.seats):
+			if not s.in_game:
+				continue
+			s.money = m
 
 	def update_plant_stock(self, plant_stock):
-		if not plant_stock:
-			return
-		old_plant_stock = self.plant_stock
-		self.plant_stock = plant_stock
-		if self.plant_stock == old_plant_stock:
-			return
-		self.emit('update_plant_stock', self.plant_stock)
+		for stk, s in zip(plant_stock, self.seats):
+			if not s.in_game:
+				continue
+			s.stock = stk
 
 	def update_players(self, nr, players):
-		if not players:
-			return
-		old_players = (self.nr_players, self.players)
-		self.players = players
-		self.nr_players = nr
-		if (self.nr_players, self.players) == old_players:
-			return
-		self.emit('update_players', self.nr_players, self.players)
+		for s in reversed(self.seats[nr:]):
+			s.clear()
+		for n,s in zip(players[:nr], self.seats[:nr]):
+			s.name = n
 
 	def update_market(self, nr, market):
 		if not market:
@@ -143,22 +167,22 @@ class FunkGame(GObject.GObject):
 		self.emit('update_market', self.cards_left, self.market)
 
 	def update_plants(self, plants):
-		if not plants:
-			return
-		old_plants = self.plants
-		self.plants = plants
-		if self.plants == old_plants:
-			return
-		self.emit('update_plants', self.plants)
+		for p, s in zip(plants, self.seats):
+			if not s.in_game:
+				continue
+			def c(idx):
+				if idx < 0:
+					return None
+				return cards[idx]
+			s.plants = tuple(c(x) for x in p)
 
 	def update_nr_city(self, nr_city):
-		if not nr_city:
-			return
-		old_nr_city = self.nr_city
-		self.nr_city = nr_city
-		if self.nr_city == old_nr_city:
-			return
-		self.emit('update_nr_city', self.nr_city)
+		for c, s in zip(nr_city, self.seats):
+			if not s.in_game:
+				continue
+			nr, cap = c
+			s.nr_cities = nr
+			s.capacity = cap
 
 	def update_map(self, nr, dist):
 		if not dist:
@@ -339,10 +363,10 @@ class FunkGame(GObject.GObject):
 			self.buy_rs(int(k), int(o), int(m), int(ke))
 
 		def build_cb(cmd, args):
-			self.build(0, int(args))
+			self.build(int(args))
 
 		def nobuild_cb(cmd, args):
-			self.build(1, 0)
+			self.finish_building()
 
 		def fire_cb(cmd, args):
 			a, b, c, d = args.split(None, 3)
@@ -353,7 +377,7 @@ class FunkGame(GObject.GObject):
 
 		def rsmove_cb(cmd, args):
 			frm, to, rs = args.split(None, 2)
-			self.rs_move(int(frm), int(to), int(cb))
+			self.rs_move(int(frm), int(to), int(rs))
 
 		def eval_cb(cmd, args):
 			x = eval(args)
@@ -393,8 +417,11 @@ class FunkGame(GObject.GObject):
 	def rs_move(self, frm, to, rs):
 		self.action(2, frm, to, rs, 0)
 
-	def build(self, act, s):
-		self.action(act, s, 0, 0, 0)
+	def build(self, s):
+		self.action(0, s, 0, 0, 0)
+
+	def finish_building(self):
+		self.action(1, 0, 0, 0, 0)
 
 	def bid(self, k, p):
 		if k < 0:
