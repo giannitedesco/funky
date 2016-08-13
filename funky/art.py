@@ -79,3 +79,28 @@ def load_houses():
 		out.append(pix)
 
 	return tuple(out)
+
+def load_resources():
+	subdir = 'funkenschlagPics'
+	path = join(base_dir, subdir)
+	fns = (
+		'kohle.gif', 'oel.gif', 'muell.gif', 'uran.gif',
+		'burn.gif', 'verfeuern.gif'
+	)
+
+	out = []
+	for fn in map(lambda x:join(path, x), fns):
+		pix = Pixbuf.new_from_file(fn)
+		out.append(pix)
+
+	return tuple(out)
+
+class ResourcePixbufs(object):
+	__map = None
+	def __new__(cls, *args, **kwargs):
+		if cls.__map is None:
+			cls.__map = load_resources()
+		return super(ResourcePixbufs, cls).__new__(cls)
+	def __getitem__(self, k):
+		return self.__map[k]
+

@@ -3,6 +3,9 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GObject
 
 from plantlist import PlantList
+from reslist import ResourceList
+
+from cards import PlantType
 
 class FireBox(Gtk.Box):
 	def __init__(self, plant_index, dcb):
@@ -14,20 +17,27 @@ class FireBox(Gtk.Box):
 		self.p = PlantList(((None, None),),
 					show_text = True,
 					selectable = False)
+		self.p.set_margin(0)
+
 		self.d = Gtk.Button.new_with_label('Demolish')
 		self.f = Gtk.ToggleButton.new_with_label('Fire')
 
 		self.d.connect('clicked', lambda x:(dcb(self.plant_index)))
 
-		self.p.set_margin(0)
+		self.r = ResourceList((), selectable = True)
+		self.r.set_columns(3)
+		self.r.set_margin(0)
 
 		self.pack_start(self.p, False, True, 0)
 		self.pack_start(self.d, False, True, 0)
 		self.pack_start(self.f, False, True, 0)
+		self.pack_start(self.r, False, True, 0)
+
+		self.plant = 0
 
 	def get_mask(self):
-		if self.f.props.active:
-			return 7
+		if self.f.props.active and self.plant:
+			return (1 << self.plant.resources) - 1
 		else:
 			return 0
 
@@ -76,6 +86,29 @@ class FireView(Gtk.Box):
 			stock = (stock >> 10) + (stock & 0x3ff)
 			text = '%d/%d'%(stock, cap)
 			self.p[i].p.update_text(0, text)
+
+			if not self.p[i].plant:
+				self.p[i].r.set_resources(())
+				return
+
+			rtmap = {
+				PlantType.green: (),
+				PlantType.coal: (0,),
+				PlantType.oil: (1,),
+				PlantType.hybrid: (1,0), # flipped?
+				PlantType.trash: (2,),
+				PlantType.nuclear: (3,),
+			}
+
+			rc = (stock & 0x3ff, stock >> 10)
+			out = list()
+			for ci, x in enumerate(rtmap[self.p[i].plant.type]):
+				out += [x for _ in xrange(rc[ci])]
+			#print rc, self.p[i].plant.type, out
+
+			self.p[i].r.set_resources(out)
+
 	def update_plants(self, plants):
 		for i, p in enumerate(plants):
+			self.p[i].plant = p
 			self.p[i].p.update_item(0, p, None)
