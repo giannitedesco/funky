@@ -24,7 +24,7 @@ class FireBox(Gtk.Box):
 
 		self.d.connect('clicked', lambda x:(dcb(self.plant_index)))
 
-		self.r = ResourceList((), selectable = True)
+		self.r = ResourceList(plant_index, (), selectable = True)
 		self.r.set_columns(3)
 		self.r.set_margin(0)
 
@@ -41,6 +41,35 @@ class FireBox(Gtk.Box):
 		else:
 			return 0
 
+	def update_stock(self, stock, cap):
+		scount = (stock >> 10) + (stock & 0x3ff)
+		text = '%d/%d'%(scount, cap)
+		self.p.update_text(0, text)
+
+		if not self.plant:
+			self.r.set_resources(())
+			return
+
+		rtmap = {
+			PlantType.green: (),
+			PlantType.coal: (0,),
+			PlantType.oil: (1,),
+			PlantType.hybrid: (0,1),
+			PlantType.trash: (2,),
+			PlantType.nuclear: (3,),
+		}
+
+		rc = (stock & 0x3ff, stock >> 10)
+		out = list()
+		for ci, x in enumerate(rtmap[self.plant.type]):
+			out += [x for _ in xrange(rc[ci])]
+		#print rc, self.plant.type, out
+
+		self.r.set_resources(out)
+
+	def update_plants(self, p):
+		self.plant = p
+		self.p.update_item(0, p, None)
 
 class FireView(Gtk.Box):
 	def __init__(self, game):
@@ -53,6 +82,8 @@ class FireView(Gtk.Box):
 		def update_cb(game, p):
 			self.update_plants(p.plants)
 			self.update_stock(p.stock)
+		def move_cb(rl, src, dst, rs):
+			self.game.rs_move(src, dst, rs)
 
 		super(FireView, self).__init__(\
 				orientation = Gtk.Orientation.VERTICAL,
@@ -74,6 +105,7 @@ class FireView(Gtk.Box):
 				spacing = 5)
 		for x in self.p:
 			hbox.pack_start(x, True, True, 0)
+			x.r.connect('rs-move', move_cb)
 
 		self.pack_start(nhb, False, True, 5)
 		self.pack_start(hbox, True, True, 5)
@@ -83,32 +115,8 @@ class FireView(Gtk.Box):
 
 	def update_stock(self, stk):
 		for i, (stock, cap) in enumerate(stk):
-			stock = (stock >> 10) + (stock & 0x3ff)
-			text = '%d/%d'%(stock, cap)
-			self.p[i].p.update_text(0, text)
-
-			if not self.p[i].plant:
-				self.p[i].r.set_resources(())
-				return
-
-			rtmap = {
-				PlantType.green: (),
-				PlantType.coal: (0,),
-				PlantType.oil: (1,),
-				PlantType.hybrid: (1,0), # flipped?
-				PlantType.trash: (2,),
-				PlantType.nuclear: (3,),
-			}
-
-			rc = (stock & 0x3ff, stock >> 10)
-			out = list()
-			for ci, x in enumerate(rtmap[self.p[i].plant.type]):
-				out += [x for _ in xrange(rc[ci])]
-			#print rc, self.p[i].plant.type, out
-
-			self.p[i].r.set_resources(out)
+			self.p[i].update_stock(stock, cap)
 
 	def update_plants(self, plants):
 		for i, p in enumerate(plants):
-			self.p[i].plant = p
-			self.p[i].p.update_item(0, p, None)
+			self.p[i].update_plants(p)

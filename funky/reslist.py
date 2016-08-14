@@ -1,15 +1,35 @@
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('GdkPixbuf', '2.0')
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk, GObject
 from gi.repository.GdkPixbuf import Pixbuf
 
 from art import ResourcePixbufs
 
+atom = Gdk.Atom.intern('funk-rs', False)
+RL = GObject.SIGNAL_RUN_LAST
+
 class ResourceList(Gtk.IconView):
-	def __init__(self, resources = (),
+	__gsignals__ = {
+		'rs-move': (RL, None, (int,int,int)),
+	}
+	def __init__(self, ident, resources = (),
 				selectable = True):
+
+		def d_send(self, dctx, data, info, time):
+			sel = self.get_selected_items()
+			if not sel:
+				return None
+			rsidx = sel[0][0]
+			data.set(atom, 8, '%d,%d,\0'%(self.ident, rsidx))
+			self.to_delete = rsidx
+		def d_recv(self, dctx, x,y, data,info, time):
+			src, rtype, _ = data.get_data().split(',', 2)
+			self.emit('rs-move', int(src), self.ident, int(rtype))
+
 		super(ResourceList, self).__init__()
+
+		self.ident = ident
 
 		s = Gtk.ListStore(int, Pixbuf)
 
@@ -25,7 +45,23 @@ class ResourceList(Gtk.IconView):
 		if not selectable:
 			self.set_selection_mode(Gtk.SelectionMode.NONE)
 
+		act = Gdk.DragAction.COPY
+
+		t = Gtk.TargetEntry()
+		t.target = 'funk-rs'
+		t.flags = Gtk.TargetFlags.SAME_APP | Gtk.TargetFlags.OTHER_WIDGET
+		t.info = 666
+		tgt = (t,)
+		self.drag_source_set(Gdk.ModifierType.BUTTON1_MASK, tgt, act)
+		self.drag_dest_set(Gtk.DestDefaults.ALL, tgt, act)
+		#self.drag_dest_set_target_list(tgt)
+		#self.drag_source_set_target_list(tgt)
+
+		self.connect('drag-data-get', d_send)
+		self.connect('drag-data-received', d_recv)
+
 		self.set_resources(resources)
+		self.set_size_request(16 * 3, 16 * 2)
 
 	def __row(self, rs):
 		pix = ResourcePixbufs()
@@ -33,9 +69,6 @@ class ResourceList(Gtk.IconView):
 		return (rs, img)
 
 	def set_resources(self, resources = ()):
-		if not resources:
-			return
-
 		s = self.get_model()
 
 		s.clear()
