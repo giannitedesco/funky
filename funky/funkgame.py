@@ -63,6 +63,7 @@ class FunkGame(GObject.GObject):
 		'update_stock': (RL, None, (object,)),
 		'update_cities': (RL, None, (object,)),
 		'update_current_player': (RL, None, (int, int)),
+		'update_player_sequence': (RL, None, (object,)),
 		'update_city_active': (RL, None, (object, )),
 		'update_bid': (RL, None, (int, int, int)),
 
@@ -138,6 +139,13 @@ class FunkGame(GObject.GObject):
 			return
 		self.emit('update_ps', self.phase, self.stufe)
 
+	def update_players(self, nr, players):
+		for s in reversed(self.seats[nr:]):
+			s.clear()
+		for n,s in zip(players[:nr], self.seats[:nr]):
+			s.name = n
+		self.nr_players = nr
+
 	def update_money(self, money):
 		for m, s in zip(money, self.seats):
 			if not s.in_game:
@@ -150,21 +158,13 @@ class FunkGame(GObject.GObject):
 				continue
 			s.stock = stk
 
-	def update_players(self, nr, players):
-		for s in reversed(self.seats[nr:]):
-			s.clear()
-		for n,s in zip(players[:nr], self.seats[:nr]):
-			s.name = n
-
-	def update_market(self, nr, market):
-		if not market:
-			return
-		old_market = (self.cards_left, self.market)
-		self.market = market
-		self.cards_left = nr
-		if (self.cards_left, self.market) == old_market:
-			return
-		self.emit('update_market', self.cards_left, self.market)
+	def update_nr_city(self, nr_city):
+		for c, s in zip(nr_city, self.seats):
+			if not s.in_game:
+				continue
+			nr, cap = c
+			s.nr_cities = nr
+			s.capacity = cap
 
 	def update_plants(self, plants):
 		for p, s in zip(plants, self.seats):
@@ -176,17 +176,15 @@ class FunkGame(GObject.GObject):
 				return cards[idx]
 			s.plants = tuple(c(x) for x in p)
 
-	def update_nr_city(self, nr_city):
-		for c, s in zip(nr_city, self.seats):
-			if not s.in_game:
-				continue
-			nr, cap = c
-			s.nr_cities = nr
-			s.capacity = cap
+	def update_market(self, nr, market):
+		old_market = (self.cards_left, self.market)
+		self.market = market
+		self.cards_left = nr
+		if (self.cards_left, self.market) == old_market:
+			return
+		self.emit('update_market', self.cards_left, self.market)
 
 	def update_map(self, nr, dist):
-		if not dist:
-			return
 		old_dists = (self.map_nr, self.dist)
 		self.dist = dist
 		self.map_nr = nr
@@ -195,8 +193,6 @@ class FunkGame(GObject.GObject):
 		self.emit('update_map', self.map_nr, self.dist)
 
 	def update_stock(self, stock):
-		if not stock:
-			return
 		old_stock = self.stock
 		self.stock = stock
 		if self.stock == old_stock:
@@ -204,8 +200,6 @@ class FunkGame(GObject.GObject):
 		self.emit('update_stock', self.stock)
 
 	def update_cities(self, cities):
-		if not cities:
-			return
 		old_cities = self.cities
 		self.cities = cities
 		if self.cities == old_cities:
@@ -221,9 +215,14 @@ class FunkGame(GObject.GObject):
 				self.current_player,
 				self.i_am)
 
-	def update_city_active(self, city_active):
-		if not city_active:
+	def update_sequence(self, sequence):
+		old_seq = self.sequence
+		self.sequence = sequence
+		if self.sequence == old_seq:
 			return
+		self.emit('update_player_sequence', self.sequence)
+
+	def update_city_active(self, city_active):
 		old_city_active = self.city_active
 		self.city_active = city_active
 		if self.city_active == old_city_active:
@@ -231,8 +230,6 @@ class FunkGame(GObject.GObject):
 		self.emit('update_city_active', self.city_active)
 
 	def update_bid(self, cur_bid):
-		if not cur_bid:
-			return
 		old_bid = self.cur_bid
 		self.cur_bid = cur_bid
 		if self.cur_bid == old_bid:
@@ -256,9 +253,6 @@ class FunkGame(GObject.GObject):
 			self.round = msg.round
 			self.update_ps(msg.phase, msg.stufe)
 
-			if msg.sequence:
-				self.sequence = msg.sequence
-
 			self.i_am = int(msg.i_am_id)
 
 			an = ('player%d'%x for x in xrange(1, 7))
@@ -268,6 +262,8 @@ class FunkGame(GObject.GObject):
 			self.update_money(msg.money)
 
 			self.update_current_player(msg.current_player)
+
+			self.update_sequence(msg.sequence)
 
 		def score_cb(msg):
 			self.update_plants(msg.plants)

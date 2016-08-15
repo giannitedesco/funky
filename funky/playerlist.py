@@ -54,6 +54,8 @@ class PlayerRow(Gtk.ListBoxRow):
 		self.update_plants(p.plants)
 		self.update_stock(p.stock)
 
+		self.seat_nr = p.seat_nr
+
 	def update_name(self, name):
 		self.name.set_markup('<b>%s</b>'%name)
 	def update_money(self, money):
@@ -69,9 +71,13 @@ class PlayerRow(Gtk.ListBoxRow):
 			self.plants.update_text(i, text)
 
 class PlayerList(Gtk.ListBox):
+	def get_row_for_seat_nr(self, index):
+		if self.rf:
+			index = self.rf[index]
+		return self.get_row_at_index(index)
 	def __init__(self, game):
 		def update_cb(game, p):
-			r = self.get_row_at_index(p.seat_nr)
+			r = self.get_row_for_seat_nr(p.seat_nr)
 			r.update_money(p.money)
 			r.update_name(p.name)
 			r.update_cities(p.nr_cities, p.capacity)
@@ -85,15 +91,31 @@ class PlayerList(Gtk.ListBox):
 			self.show_all()
 
 		def leave_cb(game, p):
-			r = self.get_row_at_index(p.seat_nr)
+			r = self.get_row_for_seat_nr(p.seat_nr)
 			self.remove(r)
 
-		def current_player_cb(_, cp, iam):
-			r = self.get_row_at_index(cp)
-			if r is None:
+		def current_player_cb(game, cp, iam):
+			if cp < 0:
 				self.null.set_active(True)
-			else:
-				r.rb.set_active(True)
+				return
+
+			r = self.get_row_for_seat_nr(cp)
+			r.rb.set_active(True)
+
+		def seq_cb(game, seq):
+			self.mf = dict(enumerate(seq[:self.game.nr_players]))
+			self.rf = dict(map(lambda x:reversed(x),
+				enumerate(seq[:self.game.nr_players])))
+			print seq[:game.nr_players]
+			print self.mf
+			print self.rf
+			print
+			self.invalidate_sort()
+
+		def sort_cb(a, b):
+			if not self.rf:
+				return cmp(a.seat_nr, b.seat_nr)
+			return cmp(self.rf[a.seat_nr], self.rf[b.seat_nr])
 
 		super(PlayerList, self).__init__()
 		self.game = game
@@ -102,8 +124,13 @@ class PlayerList(Gtk.ListBox):
 		self.set_selection_mode(Gtk.SelectionMode.NONE)
 		self.null = Gtk.RadioButton()
 		self.prev = self.null
+		self.mf = None
+		self.rf = None
 
 		self.game.connect('update_current_player', current_player_cb)
 		self.game.connect('player_join', join_cb)
 		self.game.connect('player_update', update_cb)
 		self.game.connect('player_leave', leave_cb)
+		self.game.connect('update_player_sequence', seq_cb)
+
+		self.set_sort_func(sort_cb)
