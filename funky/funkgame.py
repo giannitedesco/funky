@@ -21,7 +21,7 @@ class GameSeat(GObject.GObject):
 	def clear(self):
 		setter = super(GameSeat, self).__setattr__
 		sig = self.in_game
-		setter('name', ' ')
+		setter('name', '')
 		setter('money', 50)
 		setter('nr_cities', 0)
 		setter('capacity', 0)
@@ -64,6 +64,7 @@ class FunkGame(GObject.GObject):
 		'update_cities': (RL, None, (object,)),
 		'update_current_player': (RL, None, (int, int)),
 		'update_player_sequence': (RL, None, (object,)),
+		'update_i_am': (RL, None, (int,)),
 		'update_city_active': (RL, None, (object, )),
 		'update_bid': (RL, None, (int, int, int)),
 
@@ -222,6 +223,13 @@ class FunkGame(GObject.GObject):
 			return
 		self.emit('update_player_sequence', self.sequence)
 
+	def update_i_am(self, i_am):
+		old_me = int(self.i_am)
+		self.i_am = i_am
+		if self.i_am == old_me:
+			return
+		self.emit('update_i_am', self.i_am)
+
 	def update_city_active(self, city_active):
 		old_city_active = self.city_active
 		self.city_active = city_active
@@ -253,7 +261,7 @@ class FunkGame(GObject.GObject):
 			self.round = msg.round
 			self.update_ps(msg.phase, msg.stufe)
 
-			self.i_am = int(msg.i_am_id)
+			self.update_i_am(msg.i_am_id)
 
 			an = ('player%d'%x for x in xrange(1, 7))
 			players = tuple(map(lambda x:getattr(msg, x), an))
@@ -261,9 +269,9 @@ class FunkGame(GObject.GObject):
 
 			self.update_money(msg.money)
 
-			self.update_current_player(msg.current_player)
-
 			self.update_sequence(msg.sequence)
+
+			self.update_current_player(msg.current_player)
 
 		def score_cb(msg):
 			self.update_plants(msg.plants)

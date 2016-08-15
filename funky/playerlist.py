@@ -34,7 +34,7 @@ class PlayerRow(Gtk.ListBoxRow):
 
 		self.name = Gtk.Label(xalign = 0)
 
-		self.money = Gtk.Label()
+		self.m = Gtk.Label()
 
 		self.cities = Gtk.Label()
 
@@ -42,12 +42,13 @@ class PlayerRow(Gtk.ListBoxRow):
 		hbox.pack_start(self.col, False, False, 0)
 		hbox.pack_start(self.name, True, True, 5)
 		hbox.pack_start(self.cities, False, True, 5)
-		hbox.pack_start(self.money, False, True, 5)
+		hbox.pack_start(self.m, False, True, 5)
 		vbox.pack_start(hbox, True, True, 5)
 
 		self.plants = PlantList(selectable = False, show_text = True)
 		vbox.pack_start(self.plants, True, True, 0)
 
+		self.show_money = True
 		self.update_name(p.name)
 		self.update_cities(p.nr_cities, p.capacity)
 		self.update_money(p.money)
@@ -59,7 +60,14 @@ class PlayerRow(Gtk.ListBoxRow):
 	def update_name(self, name):
 		self.name.set_markup('<b>%s</b>'%name)
 	def update_money(self, money):
-		self.money.set_markup('<b>%d</b>'%money)
+		self.money = money
+		if self.show_money:
+			self.m.set_markup('<b>%d</b>'%self.money)
+		else:
+			self.m.set_markup('<b>??</b>')
+	def set_show_money(self, show_money):
+		self.show_money = show_money
+		self.update_money(self.money)
 	def update_cities(self, cities, cap):
 		self.cities.set_markup('<b>%d/%d</b>'%(cap, cities))
 	def update_plants(self, plants):
@@ -106,11 +114,12 @@ class PlayerList(Gtk.ListBox):
 			self.mf = dict(enumerate(seq[:self.game.nr_players]))
 			self.rf = dict(map(lambda x:reversed(x),
 				enumerate(seq[:self.game.nr_players])))
-			print seq[:game.nr_players]
-			print self.mf
-			print self.rf
-			print
 			self.invalidate_sort()
+
+		def i_am_cb(game, i_am):
+			for idx in xrange(self.game.nr_players):
+				r = self.get_row_for_seat_nr(idx)
+				r.set_show_money(idx == i_am)
 
 		def sort_cb(a, b):
 			if not self.rf:
@@ -132,5 +141,6 @@ class PlayerList(Gtk.ListBox):
 		self.game.connect('player_update', update_cb)
 		self.game.connect('player_leave', leave_cb)
 		self.game.connect('update_player_sequence', seq_cb)
+		self.game.connect('update_i_am', i_am_cb)
 
 		self.set_sort_func(sort_cb)
