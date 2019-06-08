@@ -25,7 +25,7 @@ class ServerWindow(Gtk.Box):
     }
     def __setup_tags(self, buf):
         tag = buf.create_tag('font')
-        tag.set_property('font', 'Lucida Console 8')
+        tag.set_property('font', 'Lucida Console 10')
 
         tag = buf.create_tag('bold')
         tag.set_property('weight', Pango.Weight.BOLD)
@@ -86,9 +86,9 @@ class ServerWindow(Gtk.Box):
         self.msg('<<< ' + s + '\n', ['bold'])
 
     def rx_msg(self, msg):
-        self.msg('<<< ' + str(msg) + '\n', ['dark green'])
+        self.msg('<<< ' + str(msg) + '\n', ['green'])
 
     def tx_msg(self, msg):
-        self.msg('>>> ' + str(msg) + '\n', ['purple'])
+        self.msg('>>> ' + str(msg) + '\n', ['magenta'])
         return
 
