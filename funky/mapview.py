@@ -7,7 +7,7 @@ from gi.repository import Gtk, Gdk, GObject
 import cairo
 from math import sqrt
 
-from art import load_map, load_houses
+from .art import load_map, load_houses
 
 def surf(p):
 	return Gdk.cairo_surface_create_from_pixbuf(p, 1, None)
@@ -175,6 +175,6 @@ class MapView(Gtk.DrawingArea):
 
 	def update_city_active(self, city_active):
 		g = (i for (i,x) in
-			filter(lambda (i,x):not x, enumerate(city_active)))
+			[i_x for i_x in enumerate(city_active) if not i_x[1]])
 		self.clouds = frozenset(g)
 		self.queue_draw()

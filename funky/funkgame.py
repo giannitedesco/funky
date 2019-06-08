@@ -1,7 +1,7 @@
-import server, client
+from . import server, client
 from gi.repository import GObject
 
-from cards import cards
+from .cards import cards
 
 RL = GObject.SIGNAL_RUN_LAST
 
@@ -87,7 +87,7 @@ class FunkGame(GObject.GObject):
 		def pleave_cb(p):
 			self.emit('player_leave', p)
 
-		self.seats = tuple(GameSeat(snr) for snr in xrange(6))
+		self.seats = tuple(GameSeat(snr) for snr in range(6))
 		for p in self.seats:
 			p.connect('join', pjoin_cb)
 			p.connect('update', pupdate_cb)
@@ -263,8 +263,8 @@ class FunkGame(GObject.GObject):
 
 			self.update_i_am(msg.i_am_id)
 
-			an = ('player%d'%x for x in xrange(1, 7))
-			players = tuple(map(lambda x:getattr(msg, x), an))
+			an = ('player%d'%x for x in range(1, 7))
+			players = tuple([getattr(msg, x) for x in an])
 			self.update_players(int(msg.nr_players), players)
 
 			self.update_money(msg.money)

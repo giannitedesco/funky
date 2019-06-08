@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from funky import *
 from struct import pack, unpack
@@ -7,10 +7,10 @@ from sys import argv
 def dispatch(t, b):
 	c = server.msgmap.get(t, None)
 	if c is None:
-		print 'UNKNOWN(%r), %r'%(t, b)
+		print('UNKNOWN(%r), %r'%(t, b))
 	else:
 		x = c.frombytes(b)
-		print x
+		print(x)
 
 def rxparse(fn):
 	f = open(fn)

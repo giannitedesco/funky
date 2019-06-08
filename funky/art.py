@@ -35,7 +35,7 @@ def load_plants():
 	)
 
 	out = []
-	for fn in map(lambda x:join(path, x), fns):
+	for fn in [join(path, x) for x in fns]:
 		pix = Pixbuf.new_from_file(fn)
 		#pix = pix.scale_simple(48, 48, InterpType.HYPER)
 		out.append(pix)
@@ -74,7 +74,7 @@ def load_houses():
 	)
 
 	out = []
-	for fn in map(lambda x:join(path, x), fns):
+	for fn in [join(path, x) for x in fns]:
 		pix = Pixbuf.new_from_file(fn)
 		out.append(pix)
 
@@ -89,7 +89,7 @@ def load_resources():
 	)
 
 	out = []
-	for fn in map(lambda x:join(path, x), fns):
+	for fn in [join(path, x) for x in fns]:
 		pix = Pixbuf.new_from_file(fn)
 		out.append(pix)
 

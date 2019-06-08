@@ -2,7 +2,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GObject
 
-from plantlist import PlantList
+from .plantlist import PlantList
 from funky.cards import cards
 
 class MarketView(Gtk.Box):
@@ -52,7 +52,7 @@ class MarketView(Gtk.Box):
 		hbox.pack_start(self.title, True, True, 5)
 		self.pack_start(hbox, True, True, 5)
 
-		self.plants = PlantList(((None, None) for x in xrange(8)))
+		self.plants = PlantList(((None, None) for x in range(8)))
 		self.plants.set_columns(4)
 		self.plants.connect('selection-changed', sel_cb)
 		self.pack_start(self.plants, True, True, 5)

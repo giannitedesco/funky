@@ -13,23 +13,22 @@ class Message(tuple):
 				setattr(_cls, x, property(itemgetter(i)))
 			_cls._initialized = True
 
-		a = tuple(map(lambda x: kwargs.pop(x, Sentinel()), _cls._fields))
+		a = tuple([kwargs.pop(x, Sentinel()) for x in _cls._fields])
 		if kwargs:
 			raise Exception('Unknown fields: %s'%\
-					', '.join(kwargs.keys()))
+					', '.join(list(kwargs.keys())))
 		def setdef(a, d, t):
 			if isinstance(a, Sentinel):
 				return t(d)
 			else:
 				return t(a)
 
-		ax = map(lambda (x,y,z):setdef(x,y,z),
-			zip(a, _cls._defaults, _cls._types))
+		ax = [setdef(x_y_z[0],x_y_z[1],x_y_z[2]) for x_y_z in zip(a, _cls._defaults, _cls._types)]
 		ret = tuple.__new__(_cls, ax)
 		return ret
 
 	def get_bytes(self):
-		msg = ''.join(map(lambda x:x.get_bytes(), self))
+		msg = ''.join([x.get_bytes() for x in self])
 		l = len(msg) + 5
 		hdr = ''.join((chr((l >> 16) & 0xff),
 				chr((l >> 8) & 0xff),
@@ -39,7 +38,7 @@ class Message(tuple):
 		return hdr + msg
 
 	def __repr__(self):
-		s = map(lambda (k,v):'%s=%r'%(k,v), zip(self._fields, self))
+		s = ['%s=%r'%(k_v[0],k_v[1]) for k_v in zip(self._fields, self)]
 		return self.__class__.__name__ + '(%s)'%', '.join(s)
 
 	def __str__(self):
@@ -94,7 +93,7 @@ class TIntArray(tuple):
 		assert(tv == 5)
 		ofs = 3
 		out = list()
-		for i in xrange(nr / 4):
+		for i in range(nr / 4):
 			s = TInt(unpack('!i', b[ofs:ofs+4])[0])
 			out.append(s)
 			ofs += 4
@@ -114,7 +113,7 @@ class TIntVector(tuple):
 		assert(tv == 8)
 		ofs = 3
 		out = list()
-		for i in xrange(nr / 4):
+		for i in range(nr / 4):
 			s = TInt(unpack('!i', b[ofs:ofs+4])[0])
 			out.append(s)
 			ofs += 4
@@ -133,13 +132,13 @@ class TInt2Array(tuple):
 		(tv, tot_len, nr) = unpack('!BHB', b[:4])
 		assert(tv == 11)
 		if tot_len > len(b):
-			print 'EVIL %d > %d'%(tot_len, len(b))
+			print('EVIL %d > %d'%(tot_len, len(b)))
 			return (tuple(), len(b))
 		assert(tot_len <= len(b))
 		ofs = 4
 
 		out = list()
-		for i in xrange(nr):
+		for i in range(nr):
 			(s, sz) = TIntArray.frombytes(b[ofs:], '')
 			out.append(s)
 			ofs += sz
@@ -160,7 +159,7 @@ class TInt3Array(tuple):
 		ofs = 4
 
 		out = list()
-		for i in xrange(nr):
+		for i in range(nr):
 			(s, sz) = TInt2Array.frombytes(b[ofs:], '')
 			out.append(s)
 			ofs += sz
@@ -237,7 +236,7 @@ class TStrArray(tuple):
 		assert(tv == 6)
 		ofs = 5
 		out = list()
-		for i in xrange(nr):
+		for i in range(nr):
 			(s, sz) = TStr.frombytes(b[ofs:], '')
 			out.append(s)
 			ofs += sz
@@ -257,7 +256,7 @@ class TStr2Array(tuple):
 		assert(tv == 9)
 		ofs = 6
 		out = list()
-		for i in xrange(nr):
+		for i in range(nr):
 			(s, sz) = TStrArray.frombytes(b[ofs:], '')
 			out.append(s)
 			ofs += sz
@@ -277,7 +276,7 @@ class TBoolArray(tuple):
 		assert(tv == 10)
 		ofs = 3
 		out = list()
-		for i in xrange(nr):
+		for i in range(nr):
 			s = TBool(unpack('!B', b[ofs])[0])
 			out.append(s)
 			ofs += 1

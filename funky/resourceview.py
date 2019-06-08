@@ -90,14 +90,14 @@ class ButtonRow(Gtk.ListBoxRow):
 	def update_totals(self, k, o, m, ke):
 		self.totals = (k, o, m, ke)
 
-		x = zip(self.totals, self.avail,
+		x = list(zip(self.totals, self.avail,
 				(
 					Prices.other,
 					Prices.other,
 					Prices.other,
 					Prices.nuclear,
 				)
-			)
+			))
 
 		total = sum(sum(p.value[a-t:a]) for (t, a, p) in x)
 
@@ -112,10 +112,10 @@ class ResourceView(Gtk.ListBox):
 		def buy_cb(k, o, m, ke):
 			self.game.buy_rs(k, o, m, ke)
 		def cb(*_):
-			self.buttons.update_totals(*map(int, (self.coal,
+			self.buttons.update_totals(*list(map(int, (self.coal,
 								self.oil,
 								self.trash,
-								self.nuclear)))
+								self.nuclear))))
 		def stock_cb(_, rs):
 			k, o, m, ke = rs
 			self.coal.update_count(k)

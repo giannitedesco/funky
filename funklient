@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from twisted.internet import gtk3reactor, protocol
 from twisted.internet.protocol import Protocol, ClientCreator
@@ -226,7 +226,7 @@ class FunkWindow(Gtk.Window):
 			continue
 
 	def conn_lost(self, reason):
-		print 'conn_lost', reason
+		print('conn_lost', reason)
 		self.__p = None
 
 	def rx(self, data):
@@ -243,7 +243,7 @@ class FunkWindow(Gtk.Window):
 
 	def tx(self, d):
 		if self.__p is None:
-			print 'NOT SENT', d
+			print('NOT SENT', d)
 			return
 		self.server_win.tx_msg(d)
 		b = d.get_bytes()

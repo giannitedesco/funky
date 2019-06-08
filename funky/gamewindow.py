@@ -2,14 +2,14 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GObject
 
-from plantlist import PlantList
-from playerlist import PlayerList
-from marketview import MarketView
-from resourceview import ResourceView
-from buildview import BuildView
-from mapview import MapView
-from fireview import FireView
-from funkgame import FunkGame
+from .plantlist import PlantList
+from .playerlist import PlayerList
+from .marketview import MarketView
+from .resourceview import ResourceView
+from .buildview import BuildView
+from .mapview import MapView
+from .fireview import FireView
+from .funkgame import FunkGame
 
 class GameWindow(Gtk.Box):
 	def __init__(self):

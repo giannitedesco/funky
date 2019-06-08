@@ -2,10 +2,10 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GObject
 
-from plantlist import PlantList
-from reslist import ResourceList
+from .plantlist import PlantList
+from .reslist import ResourceList
 
-from cards import PlantType
+from .cards import PlantType
 
 class FireBox(Gtk.Box):
 	def __init__(self, plant_index, dcb):
@@ -62,7 +62,7 @@ class FireBox(Gtk.Box):
 		rc = (stock & 0x3ff, stock >> 10)
 		out = list()
 		for ci, x in enumerate(rtmap[self.plant.type]):
-			out += [x for _ in xrange(rc[ci])]
+			out += [x for _ in range(rc[ci])]
 		#print rc, self.plant.type, out
 
 		self.r.set_resources(out)
@@ -99,7 +99,7 @@ class FireView(Gtk.Box):
 					spacing = 20)
 		nhb.pack_start(name, True, True, 5)
 
-		self.p = tuple([FireBox(i, dcb) for i in xrange(4)])
+		self.p = tuple([FireBox(i, dcb) for i in range(4)])
 
 		hbox = Gtk.Box(orientation = Gtk.Orientation.HORIZONTAL,
 				spacing = 5)

@@ -4,7 +4,7 @@ gi.require_version('GdkPixbuf', '2.0')
 from gi.repository import Gtk
 from gi.repository.GdkPixbuf import Pixbuf
 
-from art import PlantPixbufs
+from .art import PlantPixbufs
 
 class PlantList(Gtk.IconView):
 	def __init__(self, plants = (),

@@ -2,7 +2,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk,Gdk
 
-from plantlist import PlantList
+from .plantlist import PlantList
 from funky.cards import cards
 
 colors = (
@@ -112,12 +112,11 @@ class PlayerList(Gtk.ListBox):
 
 		def seq_cb(game, seq):
 			self.mf = dict(enumerate(seq[:self.game.nr_players]))
-			self.rf = dict(map(lambda x:reversed(x),
-				enumerate(seq[:self.game.nr_players])))
+			self.rf = dict([reversed(x) for x in enumerate(seq[:self.game.nr_players])])
 			self.invalidate_sort()
 
 		def i_am_cb(game, i_am):
-			for idx in xrange(self.game.nr_players):
+			for idx in range(self.game.nr_players):
 				r = self.get_row_for_seat_nr(idx)
 				r.set_show_money(idx == i_am)
 

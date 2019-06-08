@@ -1,14 +1,14 @@
-from funkgame import FunkGame
-from message import Message
-from serverwindow import ServerWindow
-from gamewindow import GameWindow
-import client, server
+from .funkgame import FunkGame
+from .message import Message
+from .serverwindow import ServerWindow
+from .gamewindow import GameWindow
+from . import client, server
 
 def xorp(k, c):
-	from itertools import izip, cycle
+	from itertools import cycle
 	k = bytearray(k)
 	c = bytearray(c)
-	p = ''.join(chr(a ^ b) for (a,b) in izip(c, cycle(k)))
+	p = ''.join(chr(a ^ b) for (a,b) in zip(c, cycle(k)))
 	return p
 
 def encrypt_login(x):

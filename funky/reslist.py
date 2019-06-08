@@ -4,7 +4,7 @@ gi.require_version('GdkPixbuf', '2.0')
 from gi.repository import Gtk, Gdk, GObject
 from gi.repository.GdkPixbuf import Pixbuf
 
-from art import ResourcePixbufs
+from .art import ResourcePixbufs
 
 atom = Gdk.Atom.intern('funk-rs', False)
 RL = GObject.SIGNAL_RUN_LAST

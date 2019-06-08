@@ -1,4 +1,4 @@
-from message import *
+from .message import *
 
 class QuitClientMsg(Message):
 	_fields = tuple()
