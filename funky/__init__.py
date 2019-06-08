@@ -6,9 +6,7 @@ from . import client, server
 
 def xorp(k, c):
     from itertools import cycle
-    k = bytearray(k)
-    c = bytearray(c)
-    p = ''.join(chr(a ^ b) for (a,b) in zip(c, cycle(k)))
+    p = ''.join(chr(ord(a) ^ ord(b)) for (a,b) in zip(c, cycle(k)))
     return p
 
 def encrypt_login(x):

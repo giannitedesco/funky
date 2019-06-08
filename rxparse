@@ -13,7 +13,7 @@ def dispatch(t, b):
         print(x)
 
 def rxparse(fn):
-    f = open(fn)
+    f = open(fn, 'rb')
 
     buf = f.read()
 

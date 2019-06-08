@@ -21,8 +21,8 @@ class FunkProto(Protocol):
     def __init__(self, owner):
         #super(FunkProto, self).__init__()
         self.owner = owner
-        self.txlog = open('tx.log', 'w')
-        self.rxlog = open('rx.log', 'w')
+        self.txlog = open('tx.log', 'wb')
+        self.rxlog = open('rx.log', 'wb')
 
     def connectionMade(self):
         self.owner.conn_made(self)
@@ -101,7 +101,7 @@ class FunkWindow(Gtk.Window):
 
         self.connect('destroy', self.destroy)
 
-        self.__buf = ''
+        self.__buf = b''
         self.__p = None
         self.__cr = ClientCreator(reactor, FunkProto, self)
 

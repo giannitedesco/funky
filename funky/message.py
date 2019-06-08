@@ -28,13 +28,14 @@ class Message(tuple):
         return ret
 
     def get_bytes(self):
-        msg = ''.join([x.get_bytes() for x in self])
+        msg = b''.join([x.get_bytes() for x in self])
         l = len(msg) + 5
-        hdr = ''.join((chr((l >> 16) & 0xff),
-                chr((l >> 8) & 0xff),
-                chr(l & 0xff),
-                chr((self._msgtype >> 8) & 0xff),
-                chr(self._msgtype & 0xff)))
+        hdr = pack('!BHH', (l >> 16) & 0xff, l & 0xffff, self._msgtype)
+        #hdr = b''.join((chr((l >> 16) & 0xff),
+        #        chr((l >> 8) & 0xff),
+        #        chr(l & 0xff),
+        #        chr((self._msgtype >> 8) & 0xff),
+        #        chr(self._msgtype & 0xff)))
         return hdr + msg
 
     def __repr__(self):
@@ -89,11 +90,11 @@ class TIntArray(tuple):
             return (_cls(d), 0)
 
         (tv, nr) = unpack('!BH', b[:3])
-        #print 'IntArray', tv, nr / 4, len(b)
+        #print 'IntArray', tv, nr // 4, len(b)
         assert(tv == 5)
         ofs = 3
         out = list()
-        for i in range(nr / 4):
+        for i in range(nr // 4):
             s = TInt(unpack('!i', b[ofs:ofs+4])[0])
             out.append(s)
             ofs += 4
@@ -113,7 +114,7 @@ class TIntVector(tuple):
         assert(tv == 8)
         ofs = 3
         out = list()
-        for i in range(nr / 4):
+        for i in range(nr // 4):
             s = TInt(unpack('!i', b[ofs:ofs+4])[0])
             out.append(s)
             ofs += 4
@@ -167,16 +168,16 @@ class TInt3Array(tuple):
         return (_cls(out), ofs)
 
 class TStr(str):
-    def fencode(self, s):
-        ret = ''
-        s = s.decode('utf-8').encode('iso-8859-1')
-        for c in map(ord, s):
+    def fencode(self, text):
+        ret = bytearray()
+        s = text.encode('iso-8859-1')
+        for c in s:
             if c >= 1 and c <= 127:
-                ret += chr(c)
+                ret.append(c)
             else:
-                ret += chr(0xc0 | ((c >> 6) & 0x1f))
-                ret += chr(0x80 | ((c & 0x3f)))
-        return ret
+                ret.append(0xc0 | ((c >> 6) & 0x1f))
+                ret.append(0x80 | ((c & 0x3f)))
+        return bytes(ret)
 
     def get_bytes(self):
         e = self.fencode(self)
@@ -184,10 +185,10 @@ class TStr(str):
 
     @classmethod
     def fdecode(_cls, s):
-        ret = ''
+        ret = b''
         a = 0
         cnt = 1
-        for c in map(ord, s):
+        for c in s:
             if (c & 0xe0) == 0xe0:
                 assert(cnt == 1)
                 a = (c & 0x0f)
@@ -208,13 +209,20 @@ class TStr(str):
 
             if not cnt:
                 if a > 255:
-                    x = chr((a >> 8) & 0xff) + chr(a & 0xff)
+                    x = bytearray(((a >> 8) & 0xff, a & 0xff))
                     ret += x
                 else:
-                    ret += chr(a)
+                    ret += bytearray((a,))
                 a = 0
                 cnt = 1
-        return ret.decode('iso-8859-1').encode('utf8')
+        dec = ret.decode('iso-8859-1')
+        #print('inp ', repr(s)[1:])
+        #print('ret ', repr(ret)[1:])
+        #print('dec', 'u' + repr(dec))
+        #print('enc ', repr(dec))
+        #print()
+        return dec
+
     @classmethod
     def frombytes(_cls, b, d):
         if not b:
@@ -277,7 +285,7 @@ class TBoolArray(tuple):
         ofs = 3
         out = list()
         for i in range(nr):
-            s = TBool(unpack('!B', b[ofs])[0])
+            s = TBool(b[ofs])
             out.append(s)
             ofs += 1
 
