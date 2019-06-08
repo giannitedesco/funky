@@ -1,33 +1,39 @@
 #!/usr/bin/env python3
 
-from twisted.internet import gtk3reactor, protocol
-from twisted.internet.protocol import Protocol, ClientCreator
-
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, Gio, GObject
+from gi.repository import Gtk, Gdk, Gio, GObject, GLib
 
 from funky import *
 
 from struct import unpack
 from pathlib import Path
 from argparse import ArgumentParser
+import sys
+import asyncio
 
-reactor = gtk3reactor.install()
-
-class FunkProto(Protocol):
+class FunkProto(asyncio.Protocol):
+    __slots__ = (
+        'owner',
+        'transport',
+        'rxlog',
+        'txlog',
+    )
     def __init__(self, owner):
+        super().__init__()
         #super(FunkProto, self).__init__()
         self.owner = owner
         self.txlog = open('tx.log', 'wb')
         self.rxlog = open('rx.log', 'wb')
 
-    def connectionMade(self):
+    def connection_made(self, transport):
+        self.transport = transport
         self.owner.conn_made(self)
-    def connectionLost(self, reason):
+
+    def connection_lost(self, reason):
         self.owner.conn_lost(reason)
 
-    def dataReceived(self, data):
+    def data_received(self, data):
         self.rxlog.write(data)
         self.rxlog.flush()
         self.owner.rx(data)
@@ -36,6 +42,17 @@ class FunkProto(Protocol):
         self.txlog.write(b)
         self.txlog.flush()
         self.transport.write(b)
+
+class Transport(asyncio.BaseTransport):
+    __slots__ = (
+        'conn',
+    )
+    def __init__(self, conn, extra = None):
+        super().__init__(extra = extra)
+        self.conn = conn
+    def write(self, b):
+        txf = self.conn.get_output_stream()
+        txf.write_bytes(GLib.Bytes(b))
 
 class FunkWindow(Gtk.Window):
     def __from_file(self, fn):
@@ -54,7 +71,30 @@ class FunkWindow(Gtk.Window):
             self.game.rx_msg(t, b)
 
     def __from_net(self):
-        self.__c = self.__cr.connectTCP('game.brettspielwelt.de', 7670)
+        hostname = 'game.brettspielwelt.de'
+        port = 7670
+        addr = Gio.NetworkAddress.new(hostname, port)
+        client = Gio.SocketClient.new()
+        proto = FunkProto(self)
+
+        def read_cb(obj, result, proto):
+            f = proto.transport.conn.get_input_stream()
+            b = f.read_bytes_finish(result)
+            d = b.get_data()
+            if not d:
+                proto.connection_lost()
+                return
+            proto.data_received(d)
+            f.read_bytes_async(8192, 1, None, read_cb, proto)
+
+        def conn_cb(client, result, proto):
+            conn = client.connect_finish(result)
+            trans = Transport(conn)
+            proto.connection_made(trans)
+            f = proto.transport.conn.get_input_stream()
+            f.read_bytes_async(8192, 1, None, read_cb, proto)
+
+        client.connect_async(addr, None, conn_cb, proto)
 
     def __init__(self, read_log = None):
         def swin_cb(_, s):
@@ -101,7 +141,6 @@ class FunkWindow(Gtk.Window):
 
         self.__buf = b''
         self.__p = None
-        self.__cr = ClientCreator(reactor, FunkProto, self)
 
         self.set_default_size(1280, 720)
         hb = Gtk.HeaderBar()
@@ -250,7 +289,8 @@ class FunkWindow(Gtk.Window):
     def destroy(self, *_):
         super(FunkWindow, self).destroy()
         try:
-            reactor.stop()
+            # TODO stop
+            pass
         except:
             pass
 
@@ -259,13 +299,14 @@ class FunKlient(Gtk.Application):
         super(FunKlient, self).__init__(
                 application_id = 'apps.fun.klient',
                 flags = Gio.ApplicationFlags.FLAGS_NONE)
-        self.connect('activate', self.on_activate)
+        #self.connect('activate', self.on_activate)
         self.read_log = read_log
 
-    def on_activate(self, data = None):
+    def do_activate(self, data = None):
         window = FunkWindow(self.read_log)
         window.show_all()
         self.add_window(window)
+        window.present()
 
 def main():
     opts = ArgumentParser(description='FunKlient - BSW Powergrid client')
@@ -276,8 +317,7 @@ def main():
     args = opts.parse_args()
 
     app = FunKlient(args.read_log)
-    reactor.registerGApplication(app)
-    reactor.run()
+    app.run(sys.argv)
 
 if __name__ == '__main__':
     main()
