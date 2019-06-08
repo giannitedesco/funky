@@ -14,7 +14,7 @@ class CmdClientMsg(Message):
 
 class InitClientMsg(Message):
     _fields = ('rm', 'gm', 'nation', 'name', 'jver')
-    _defaults = ('43' ,'', 'en', '', '1.8.0_101')
+    _defaults = ('43' ,'', 'en', '', '1.8.0_212')
     _types = (TStr, TStr, TStr, TStr, TStr)
     _msgtype = 2
 
@@ -23,8 +23,8 @@ class LoginClientMsg(Message):
             'client_type', 'client_id', 'jver', 'osver',
             'client_ver', 'mac')
     _defaults = ('PLAIN' ,'', 'name', '',
-        'Client', 'BSW', '1.8.0_101', 'sparc-1.0-SunOS',
-        '-- Client $Revision: 1.183 $ (Client)\n-- SelfClient $Revision: 1.77 $', '')
+        'Client', 'BSW', '1.8.0_212', 'sparc-1.0-SunOS',
+        '-- Client $Revision: 1.184 $ (Client)\n-- SelfClient $Revision: 1.79 $', '')
     _types = (TStr, TStr, TStr, TStr,
             TStr, TStr, TStr, TStr,
             TStr, TStr)

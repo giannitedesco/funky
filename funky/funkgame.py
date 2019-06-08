@@ -342,7 +342,7 @@ class FunkGame(GObject.GObject):
 
     def cl_cmd(self, cmd):
         'Receive a string typed in to server window'
-        if len(cmd) >=2 and cmd[:2] == '//':
+        if cmd.startswith('//'):
             self.game_cmd(cmd[2:])
         else:
             self.sys_cmd(cmd)

@@ -139,6 +139,7 @@ class MapView(Gtk.DrawingArea):
         self.game = game
         self.cities = None
         self.houses = None
+        self.cxy = None
 
         self.clear_map()
         self.add_events(Gdk.EventMask.BUTTON_RELEASE_MASK
