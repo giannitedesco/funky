@@ -52,7 +52,7 @@ class ServerWindow(Gtk.Box):
         self.text = Gtk.TextView()
         self.text.set_editable(False)
         self.text.set_cursor_visible(False)
-        self.text.set_wrap_mode(Gtk.WrapMode.WORD)
+        self.text.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
         self.__setup_tags(self.text.get_buffer())
         scr = Gtk.ScrolledWindow()
         scr.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
