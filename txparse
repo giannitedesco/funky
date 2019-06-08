@@ -5,54 +5,54 @@ from sys import argv
 from struct import unpack
 
 def decrypt(x):
-	x = client.LoginClientMsg(
-		nam = xorp(x.enckey, x.nam),
-		pwd = xorp(x.enckey, x.pwd),
-		client_type = xorp(x.enckey, x.client_type),
-		client_id = xorp(x.enckey, x.client_id),
-		jver = xorp(x.enckey, x.jver),
-		osver = xorp(x.enckey, x.osver),
-		client_ver = xorp(x.enckey, x.client_ver),
-		mac = xorp(x.enckey, x.mac),
-	)
+    x = client.LoginClientMsg(
+        nam = xorp(x.enckey, x.nam),
+        pwd = xorp(x.enckey, x.pwd),
+        client_type = xorp(x.enckey, x.client_type),
+        client_id = xorp(x.enckey, x.client_id),
+        jver = xorp(x.enckey, x.jver),
+        osver = xorp(x.enckey, x.osver),
+        client_ver = xorp(x.enckey, x.client_ver),
+        mac = xorp(x.enckey, x.mac),
+    )
 
-	return x
+    return x
 
 def dispatch(t, b):
-	c = client.msgmap.get(t, None)
-	if c is None:
-		print('UNKNOWN(%r), %r'%(t, b))
-	else:
-		x = c.frombytes(b)
-		#if b != x.get_bytes()[5:]:
-		#	print x
-		#	print '%r'%bytearray(b)
-		#	print '%r'%bytearray(x.get_bytes()[5:])
-		#	print
-		if isinstance(x, client.LoginClientMsg):
-			x = decrypt(x)
-		print(x)
+    c = client.msgmap.get(t, None)
+    if c is None:
+        print('UNKNOWN(%r), %r'%(t, b))
+    else:
+        x = c.frombytes(b)
+        #if b != x.get_bytes()[5:]:
+        #    print x
+        #    print '%r'%bytearray(b)
+        #    print '%r'%bytearray(x.get_bytes()[5:])
+        #    print
+        if isinstance(x, client.LoginClientMsg):
+            x = decrypt(x)
+        print(x)
 
 def rxparse(fn):
-	f = open(fn)
+    f = open(fn)
 
-	buf = f.read()
+    buf = f.read()
 
-	while len(buf) >= 5:
-		(hi, lo, t) = unpack('>BHH', buf[:5])
-		l = (hi << 16) | lo
-		assert(l >= 5)
-		b = buf[5:l]
+    while len(buf) >= 5:
+        (hi, lo, t) = unpack('>BHH', buf[:5])
+        l = (hi << 16) | lo
+        assert(l >= 5)
+        b = buf[5:l]
 
-		buf = buf[l:]
+        buf = buf[l:]
 
-		dispatch(t, b)
-		#print t, l
+        dispatch(t, b)
+        #print t, l
 
 def main():
-	for x in argv[1:]:
-		rxparse(x)
-	return
+    for x in argv[1:]:
+        rxparse(x)
+    return
 
 if __name__ == '__main__':
-	main()
+    main()

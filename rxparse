@@ -5,33 +5,33 @@ from struct import pack, unpack
 from sys import argv
 
 def dispatch(t, b):
-	c = server.msgmap.get(t, None)
-	if c is None:
-		print('UNKNOWN(%r), %r'%(t, b))
-	else:
-		x = c.frombytes(b)
-		print(x)
+    c = server.msgmap.get(t, None)
+    if c is None:
+        print('UNKNOWN(%r), %r'%(t, b))
+    else:
+        x = c.frombytes(b)
+        print(x)
 
 def rxparse(fn):
-	f = open(fn)
+    f = open(fn)
 
-	buf = f.read()
+    buf = f.read()
 
-	while len(buf) >= 5:
-		(hi, lo, t) = unpack('>BHH', buf[:5])
-		l = (hi << 16) | lo
-		assert(l >= 5)
-		b = buf[5:l]
+    while len(buf) >= 5:
+        (hi, lo, t) = unpack('>BHH', buf[:5])
+        l = (hi << 16) | lo
+        assert(l >= 5)
+        b = buf[5:l]
 
-		buf = buf[l:]
+        buf = buf[l:]
 
-		dispatch(t, b)
-		#print t, l
+        dispatch(t, b)
+        #print t, l
 
 def main():
-	for x in argv[1:]:
-		rxparse(x)
-	return
+    for x in argv[1:]:
+        rxparse(x)
+    return
 
 if __name__ == '__main__':
-	main()
+    main()

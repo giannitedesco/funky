@@ -8,54 +8,54 @@ from funky.plantlist import PlantList
 from funky.cards import cards
 
 class MainWin(Gtk.Window):
-	def destroy(self, *_):
-		Gtk.Window.destroy(self)
-		if self.in_main:
-			Gtk.main_quit()
-			self.in_main = False
+    def destroy(self, *_):
+        Gtk.Window.destroy(self)
+        if self.in_main:
+            Gtk.main_quit()
+            self.in_main = False
 
-	def main(self):
-		self.in_main = True
-		Gtk.main()
+    def main(self):
+        self.in_main = True
+        Gtk.main()
 
-	def __init__(self, read_log = None):
-		super(MainWin, self).__init__(type =
-						Gtk.WindowType.TOPLEVEL)
+    def __init__(self, read_log = None):
+        super(MainWin, self).__init__(type =
+                        Gtk.WindowType.TOPLEVEL)
 
-		self.set_title('Plant Viewer')
-		self.set_default_size(800, 600)
+        self.set_title('Plant Viewer')
+        self.set_default_size(800, 600)
 
-		accel = Gtk.AccelGroup()
-		accel.connect(Gdk.keyval_from_name('Q'),
-				Gdk.ModifierType.CONTROL_MASK,
-				0,
-				self.destroy)
-		accel.connect(Gdk.keyval_from_name('W'),
-				Gdk.ModifierType.CONTROL_MASK,
-				0,
-				self.destroy)
-		self.add_accel_group(accel)
-		self.set_mnemonic_modifier(0)
+        accel = Gtk.AccelGroup()
+        accel.connect(Gdk.keyval_from_name('Q'),
+                Gdk.ModifierType.CONTROL_MASK,
+                0,
+                self.destroy)
+        accel.connect(Gdk.keyval_from_name('W'),
+                Gdk.ModifierType.CONTROL_MASK,
+                0,
+                self.destroy)
+        self.add_accel_group(accel)
+        self.set_mnemonic_modifier(0)
 
-		scr = Gtk.ScrolledWindow()
-		scr.set_policy(Gtk.PolicyType.AUTOMATIC,
-				Gtk.PolicyType.AUTOMATIC)
+        scr = Gtk.ScrolledWindow()
+        scr.set_policy(Gtk.PolicyType.AUTOMATIC,
+                Gtk.PolicyType.AUTOMATIC)
 
-		def cstr(c):
-			return '%d %s\n%d cities'%(c.resources,
-						c.type.name,
-						c.capacity)
-		gen = ((c,cstr(c)) for c in cards)
-		self.plants = PlantList(gen, show_text = True)
-		scr.add(self.plants)
-		self.add(scr)
+        def cstr(c):
+            return '%d %s\n%d cities'%(c.resources,
+                        c.type.name,
+                        c.capacity)
+        gen = ((c,cstr(c)) for c in cards)
+        self.plants = PlantList(gen, show_text = True)
+        scr.add(self.plants)
+        self.add(scr)
 
-		self.connect('destroy', self.destroy)
-		self.show_all()
+        self.connect('destroy', self.destroy)
+        self.show_all()
 
 def main():
-	x = MainWin()
-	x.main()
+    x = MainWin()
+    x.main()
 
 if __name__ == '__main__':
-	main()
+    main()

@@ -18,268 +18,268 @@ import traceback
 reactor = gtk3reactor.install()
 
 class FunkProto(Protocol):
-	def __init__(self, owner):
-		#super(FunkProto, self).__init__()
-		self.owner = owner
-		self.txlog = open('tx.log', 'w')
-		self.rxlog = open('rx.log', 'w')
+    def __init__(self, owner):
+        #super(FunkProto, self).__init__()
+        self.owner = owner
+        self.txlog = open('tx.log', 'w')
+        self.rxlog = open('rx.log', 'w')
 
-	def connectionMade(self):
-		self.owner.conn_made(self)
-	def connectionLost(self, reason):
-		self.owner.conn_lost(reason)
+    def connectionMade(self):
+        self.owner.conn_made(self)
+    def connectionLost(self, reason):
+        self.owner.conn_lost(reason)
 
-	def dataReceived(self, data):
-		self.rxlog.write(data)
-		self.rxlog.flush()
-		self.owner.rx(data)
+    def dataReceived(self, data):
+        self.rxlog.write(data)
+        self.rxlog.flush()
+        self.owner.rx(data)
 
-	def tx(self, b):
-		self.txlog.write(b)
-		self.txlog.flush()
-		self.transport.write(b)
+    def tx(self, b):
+        self.txlog.write(b)
+        self.txlog.flush()
+        self.transport.write(b)
 
 class FunkWindow(Gtk.Window):
-	def __from_file(self, fn):
-		f = open(fn)
+    def __from_file(self, fn):
+        f = open(fn)
 
-		buf = f.read()
+        buf = f.read()
 
-		while len(buf) >= 5:
-			(hi, lo, t) = unpack('>BHH', buf[:5])
-			l = (hi << 16) | lo
-			assert(l >= 5)
-			b = buf[5:l]
+        while len(buf) >= 5:
+            (hi, lo, t) = unpack('>BHH', buf[:5])
+            l = (hi << 16) | lo
+            assert(l >= 5)
+            b = buf[5:l]
 
-			buf = buf[l:]
+            buf = buf[l:]
 
-			self.game.rx_msg(t, b)
+            self.game.rx_msg(t, b)
 
-	def __from_net(self):
-		self.__c = self.__cr.connectTCP('game.brettspielwelt.de', 7670)
+    def __from_net(self):
+        self.__c = self.__cr.connectTCP('game.brettspielwelt.de', 7670)
 
-	def __init__(self, read_log = None):
-		def swin_cb(_, s):
-			self.game.cl_cmd(s)
-		def tx_cb(_, msg):
-			self.tx(msg)
-		def chat_cb(_, s):
-			self.server_win.chat_msg(s)
-		def log_cb(_, s):
-			self.server_win.log(s)
-		def unhandled_cb(_, msg):
-			self.server_win.rx_msg(msg)
+    def __init__(self, read_log = None):
+        def swin_cb(_, s):
+            self.game.cl_cmd(s)
+        def tx_cb(_, msg):
+            self.tx(msg)
+        def chat_cb(_, s):
+            self.server_win.chat_msg(s)
+        def log_cb(_, s):
+            self.server_win.log(s)
+        def unhandled_cb(_, msg):
+            self.server_win.rx_msg(msg)
 
-		def ps_cb(_, p, s):
-			pstr = (None,
-				'auction',
-				'buy resources',
-				'build cities',
-				'fire plants',
-				None,
-				None,
-				None,
-				None,
-				None,
-				'Demolish plants',
-				'Dispose of raw materials')
-			p = pstr[p]
-			hb = self.get_titlebar()
-			if p is None:
-				hb.props.title = 'FunKlient'
-				return
-			hb.props.title = 'FunKlient: [stufe-%d %s]'%(s + 1, p)
+        def ps_cb(_, p, s):
+            pstr = (None,
+                'auction',
+                'buy resources',
+                'build cities',
+                'fire plants',
+                None,
+                None,
+                None,
+                None,
+                None,
+                'Demolish plants',
+                'Dispose of raw materials')
+            p = pstr[p]
+            hb = self.get_titlebar()
+            if p is None:
+                hb.props.title = 'FunKlient'
+                return
+            hb.props.title = 'FunKlient: [stufe-%d %s]'%(s + 1, p)
 
-		def kb_alt_1(*_):
-			self.stack.set_visible_child_name('game')
-		def kb_alt_2(*_):
-			self.stack.set_visible_child_name('server')
-			self.server_win.entry.grab_focus()
+        def kb_alt_1(*_):
+            self.stack.set_visible_child_name('game')
+        def kb_alt_2(*_):
+            self.stack.set_visible_child_name('server')
+            self.server_win.entry.grab_focus()
 
-		super(FunkWindow, self).__init__(type =
-						Gtk.WindowType.TOPLEVEL)
+        super(FunkWindow, self).__init__(type =
+                        Gtk.WindowType.TOPLEVEL)
 
-		self.connect('destroy', self.destroy)
+        self.connect('destroy', self.destroy)
 
-		self.__buf = ''
-		self.__p = None
-		self.__cr = ClientCreator(reactor, FunkProto, self)
+        self.__buf = ''
+        self.__p = None
+        self.__cr = ClientCreator(reactor, FunkProto, self)
 
-		self.set_default_size(1280, 720)
-		hb = Gtk.HeaderBar()
-		hb.set_show_close_button(True)
-		hb.props.title = 'FunKlient'
-		self.set_titlebar(hb)
+        self.set_default_size(1280, 720)
+        hb = Gtk.HeaderBar()
+        hb.set_show_close_button(True)
+        hb.props.title = 'FunKlient'
+        self.set_titlebar(hb)
 
-		accel = Gtk.AccelGroup()
-		accel.connect(Gdk.keyval_from_name('Q'),
-				Gdk.ModifierType.CONTROL_MASK,
-				0,
-				self.destroy)
-		accel.connect(Gdk.keyval_from_name('W'),
-				Gdk.ModifierType.CONTROL_MASK,
-				0,
-				self.destroy)
-		accel.connect(Gdk.keyval_from_name('1'),
-				Gdk.ModifierType.MOD1_MASK,
-				0,
-				kb_alt_1)
-		accel.connect(Gdk.keyval_from_name('2'),
-				Gdk.ModifierType.MOD1_MASK,
-				0,
-				kb_alt_2)
-		self.add_accel_group(accel)
-		self.set_mnemonic_modifier(0)
+        accel = Gtk.AccelGroup()
+        accel.connect(Gdk.keyval_from_name('Q'),
+                Gdk.ModifierType.CONTROL_MASK,
+                0,
+                self.destroy)
+        accel.connect(Gdk.keyval_from_name('W'),
+                Gdk.ModifierType.CONTROL_MASK,
+                0,
+                self.destroy)
+        accel.connect(Gdk.keyval_from_name('1'),
+                Gdk.ModifierType.MOD1_MASK,
+                0,
+                kb_alt_1)
+        accel.connect(Gdk.keyval_from_name('2'),
+                Gdk.ModifierType.MOD1_MASK,
+                0,
+                kb_alt_2)
+        self.add_accel_group(accel)
+        self.set_mnemonic_modifier(0)
 
-		self.stack = Gtk.Stack()
-		self.stack.set_transition_type(\
-				Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
-		self.stack.set_transition_duration(500)
+        self.stack = Gtk.Stack()
+        self.stack.set_transition_type(\
+                Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
+        self.stack.set_transition_duration(500)
 
-		self.server_win = ServerWindow()
-		self.server_win.connect('server_cmd', swin_cb)
+        self.server_win = ServerWindow()
+        self.server_win.connect('server_cmd', swin_cb)
 
-		self.game_win = GameWindow()
+        self.game_win = GameWindow()
 
-		self.game = self.game_win.game
-		self.game.connect('tx_msg', tx_cb)
-		self.game.connect('chat_msg', chat_cb)
-		self.game.connect('log', log_cb)
-		self.game.connect('rx_unhandled', unhandled_cb)
-		self.game.connect('update_ps', ps_cb)
+        self.game = self.game_win.game
+        self.game.connect('tx_msg', tx_cb)
+        self.game.connect('chat_msg', chat_cb)
+        self.game.connect('log', log_cb)
+        self.game.connect('rx_unhandled', unhandled_cb)
+        self.game.connect('update_ps', ps_cb)
 
-		self.stack.add_titled(self.game_win,
-					'game',
-					'Game Window')
-		self.stack.child_set_property(self.game_win,
-					'icon-name',
-					'system-users-symbolic')
+        self.stack.add_titled(self.game_win,
+                    'game',
+                    'Game Window')
+        self.stack.child_set_property(self.game_win,
+                    'icon-name',
+                    'system-users-symbolic')
 
-		self.stack.add_titled(self.server_win,
-					'server',
-					'Server Messages')
-		self.stack.child_set_property(self.server_win,
-					'icon-name',
-					'preferences-system-network-symbolic')
+        self.stack.add_titled(self.server_win,
+                    'server',
+                    'Server Messages')
+        self.stack.child_set_property(self.server_win,
+                    'icon-name',
+                    'preferences-system-network-symbolic')
 
-		vb = Gtk.Box(orientation = Gtk.Orientation.VERTICAL,
-				spacing = 6)
-		vb.pack_start(self.stack, True, True, 0)
-		vb.pack_start(self.stack, True, True, 0)
-		self.add(vb)
+        vb = Gtk.Box(orientation = Gtk.Orientation.VERTICAL,
+                spacing = 6)
+        vb.pack_start(self.stack, True, True, 0)
+        vb.pack_start(self.stack, True, True, 0)
+        self.add(vb)
 
-		stack_switcher = Gtk.StackSwitcher()
-		stack_switcher.set_stack(self.stack)
-		hb = Gtk.HeaderBar()
-		hb.set_show_close_button(True)
-		hb.props.title = 'FunKlient'
-		hb.pack_end(stack_switcher)
-		self.set_titlebar(hb)
+        stack_switcher = Gtk.StackSwitcher()
+        stack_switcher.set_stack(self.stack)
+        hb = Gtk.HeaderBar()
+        hb.set_show_close_button(True)
+        hb.props.title = 'FunKlient'
+        hb.pack_end(stack_switcher)
+        self.set_titlebar(hb)
 
-		if read_log:
-			self.__from_file(read_log)
-		else:
-			self.__from_net()
+        if read_log:
+            self.__from_file(read_log)
+        else:
+            self.__from_net()
 
-	def first_init(self):
-		x = client.InitClientMsg()
-		self.tx(x)
+    def first_init(self):
+        x = client.InitClientMsg()
+        self.tx(x)
 
-	def login(self, nam, pwd):
-		x = client.LoginClientMsg(
-			nam = nam,
-			pwd = pwd,
-			osver = 'amd64-4.4.0-31-generic-Linux',
-			mac = '1015660640995 MAC:201564d3cb780 /fe80:0:0:0:d0e5:adff:feba:8c0%lxcbr0/10.0.3.1- MAC:a434d9c551ca/fe80:0:0:0:a634:d9ff:fec5:51ca%wlp4s0/172.20.10.5'
-		)
-		x = encrypt_login(x)
-		self.tx(x)
+    def login(self, nam, pwd):
+        x = client.LoginClientMsg(
+            nam = nam,
+            pwd = pwd,
+            osver = 'amd64-4.4.0-31-generic-Linux',
+            mac = '1015660640995 MAC:201564d3cb780 /fe80:0:0:0:d0e5:adff:feba:8c0%lxcbr0/10.0.3.1- MAC:a434d9c551ca/fe80:0:0:0:a634:d9ff:fec5:51ca%wlp4s0/172.20.10.5'
+        )
+        x = encrypt_login(x)
+        self.tx(x)
 
-	def refresh(self):
-		x = client.RefreshClientMsg()
-		self.tx(x)
+    def refresh(self):
+        x = client.RefreshClientMsg()
+        self.tx(x)
 
-	def game_start(self):
-		x = client.GameStartClientMsg()
-		self.tx(x)
+    def game_start(self):
+        x = client.GameStartClientMsg()
+        self.tx(x)
 
-	def tool_init(self, tool):
-		x = client.ToolClientMsg(tool = tool)
-		self.tx(x)
+    def tool_init(self, tool):
+        x = client.ToolClientMsg(tool = tool)
+        self.tx(x)
 
-	def conn_made(self, p):
-		login = open(join(environ['HOME'], '.bsw-account')).read()
-		nam, pwd = login.rstrip('\r\n').split(':', 1)
+    def conn_made(self, p):
+        login = open(join(environ['HOME'], '.bsw-account')).read()
+        nam, pwd = login.rstrip('\r\n').split(':', 1)
 
-		self.__p = p
-		self.first_init()
-		self.login(nam, pwd)
-		self.refresh()
-		self.game_start()
-		self.refresh()
-		for x in ('BackTool', 'LobbyTool', 'UserGameTool',
-				'GatherTool', 'TrennTool', 'NewsTool',
-				'UserInfoTool', 'UserListTool', 'ChannelTool',
-				'HelpTool', 'ArbeitsplatzTool', 'LastGameTool',
-				'RemoteCmdTool'):
-			#self.tool_init(x)
-			continue
+        self.__p = p
+        self.first_init()
+        self.login(nam, pwd)
+        self.refresh()
+        self.game_start()
+        self.refresh()
+        for x in ('BackTool', 'LobbyTool', 'UserGameTool',
+                'GatherTool', 'TrennTool', 'NewsTool',
+                'UserInfoTool', 'UserListTool', 'ChannelTool',
+                'HelpTool', 'ArbeitsplatzTool', 'LastGameTool',
+                'RemoteCmdTool'):
+            #self.tool_init(x)
+            continue
 
-	def conn_lost(self, reason):
-		print('conn_lost', reason)
-		self.__p = None
+    def conn_lost(self, reason):
+        print('conn_lost', reason)
+        self.__p = None
 
-	def rx(self, data):
-		self.__buf += data
-		while len(self.__buf) >= 5:
-			(hi, lo, t) = unpack('>BHH', self.__buf[:5])
-			l = (hi << 16) | lo
-			assert(l >= 5)
-			if l > len(self.__buf):
-				break
-			b = self.__buf[5:l]
-			self.__buf = self.__buf[l:]
-			self.game.rx_msg(t, b)
+    def rx(self, data):
+        self.__buf += data
+        while len(self.__buf) >= 5:
+            (hi, lo, t) = unpack('>BHH', self.__buf[:5])
+            l = (hi << 16) | lo
+            assert(l >= 5)
+            if l > len(self.__buf):
+                break
+            b = self.__buf[5:l]
+            self.__buf = self.__buf[l:]
+            self.game.rx_msg(t, b)
 
-	def tx(self, d):
-		if self.__p is None:
-			print('NOT SENT', d)
-			return
-		self.server_win.tx_msg(d)
-		b = d.get_bytes()
-		self.__p.tx(b)
+    def tx(self, d):
+        if self.__p is None:
+            print('NOT SENT', d)
+            return
+        self.server_win.tx_msg(d)
+        b = d.get_bytes()
+        self.__p.tx(b)
 
-	def destroy(self, *_):
-		super(FunkWindow, self).destroy()
-		try:
-			reactor.stop()
-		except:
-			pass
+    def destroy(self, *_):
+        super(FunkWindow, self).destroy()
+        try:
+            reactor.stop()
+        except:
+            pass
 
 class FunKlient(Gtk.Application):
-	def __init__(self, read_log = None):
-		super(FunKlient, self).__init__(
-				application_id = 'apps.fun.klient',
-				flags = Gio.ApplicationFlags.FLAGS_NONE)
-		self.connect('activate', self.on_activate)
-		self.read_log = read_log
+    def __init__(self, read_log = None):
+        super(FunKlient, self).__init__(
+                application_id = 'apps.fun.klient',
+                flags = Gio.ApplicationFlags.FLAGS_NONE)
+        self.connect('activate', self.on_activate)
+        self.read_log = read_log
 
-	def on_activate(self, data = None):
-		window = FunkWindow(self.read_log)
-		window.show_all()
-		self.add_window(window)
+    def on_activate(self, data = None):
+        window = FunkWindow(self.read_log)
+        window.show_all()
+        self.add_window(window)
 
 def main():
-	opts = ArgumentParser(description='FunKlient - BSW Powergrid client')
-	opts.add_argument('-r', '--read-log',
-				metavar = 'path',
-				type = str,
-				help = 'Join a path to a config path')
-	args = opts.parse_args()
+    opts = ArgumentParser(description='FunKlient - BSW Powergrid client')
+    opts.add_argument('-r', '--read-log',
+                metavar = 'path',
+                type = str,
+                help = 'Join a path to a config path')
+    args = opts.parse_args()
 
-	app = FunKlient(args.read_log)
-	reactor.registerGApplication(app)
-	reactor.run()
+    app = FunKlient(args.read_log)
+    reactor.registerGApplication(app)
+    reactor.run()
 
 if __name__ == '__main__':
-	main()
+    main()
