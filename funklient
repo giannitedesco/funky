@@ -10,10 +10,8 @@ from gi.repository import Gtk, Gdk, Gio, GObject
 from funky import *
 
 from struct import unpack
-from os import environ
-from os.path import join
+from pathlib import Path
 from argparse import ArgumentParser
-import traceback
 
 reactor = gtk3reactor.install()
 
@@ -208,7 +206,7 @@ class FunkWindow(Gtk.Window):
         self.tx(x)
 
     def conn_made(self, p):
-        login = open(join(environ['HOME'], '.bsw-account')).read()
+        login = (Path.home() / '.bsw-account').open().read()
         nam, pwd = login.rstrip('\r\n').split(':', 1)
 
         self.__p = p
